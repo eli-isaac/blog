@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { SidebarProvider } from './context/SidebarContext'
 import Layout from './components/Layout'
@@ -25,10 +25,10 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <SidebarProvider>
         <AnimatedRoutes />
       </SidebarProvider>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
