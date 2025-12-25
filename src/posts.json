@@ -1,0 +1,21 @@
+[
+  
+  {
+    "title": "Why we Feel",
+    "subtitle": "A philosophical investigation into the nature of feeling",
+    "date": "2025-12-25",
+    "link": "/posts/why-we-feel"
+  },
+  {
+    "title": "The Meaning of Life",
+    "subtitle": "A philosophical investigation into the meaning of life",
+    "date": "2025-12-25",
+    "link": "/posts/the-meaning-of-life"
+  },
+  {
+    "title": "Activation Functions in Neural Networks",
+    "subtitle": "A chronological consideration of the most popular activation functions",
+    "date": "2025-12-25",
+    "link": "/posts/activation-functions-in-neural-networks"
+  }
+]
