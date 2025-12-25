@@ -17,6 +17,7 @@ export default function Posts() {
                 title={post.title}
                 subtitle={post.subtitle}
                 date={post.date}
+                authors={post.authors}
                 slug={getSlug(post.link)}
                 size="small"
               />

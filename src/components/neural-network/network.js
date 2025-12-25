@@ -117,7 +117,7 @@ function oneHot(index, size) {
 }
 
 // Train one epoch
-export function trainStep(net, data, activation, outputSize) {
+export function trainStep(net, data, activation) {
   let totalLoss = 0
   const shuffled = [...data].sort(() => Math.random() - 0.5)
   for (const { x, y } of shuffled) {

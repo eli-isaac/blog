@@ -26,6 +26,7 @@ export default function ActivationFunctions() {
       title="Activation Functions"
       subtitle="Why neural networks need non-linearity"
       date="2025-12-25"
+      authors={["Eli Plutchok", "Isaac Trank"]}
       slug="activation-functions-in-neural-networks"
     >
       <Section title="Intro">

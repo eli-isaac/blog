@@ -1,4 +1,5 @@
 import { useNeuralNetwork } from './context'
+import Settings from './Settings'
 
 export default function Controls() {
   const { 
@@ -8,7 +9,6 @@ export default function Controls() {
     state, 
     activation, 
     setActivation,
-    currentProblemIndex,
   } = useNeuralNetwork()
 
   return (
@@ -32,16 +32,20 @@ export default function Controls() {
         </button>
       </div>
       
-      <select
-        value={activation}
-        onChange={(e) => setActivation(e.target.value)}
-        className="px-3 py-2 border rounded text-sm bg-white"
-      >
-        <option value="none">No activation (linear)</option>
-        <option value="relu">ReLU</option>
-        <option value="sigmoid">Sigmoid</option>
-        <option value="tanh">Tanh</option>
-      </select>
+      <div className="flex items-center gap-2">
+        <select
+          value={activation}
+          onChange={(e) => setActivation(e.target.value)}
+          className="px-3 py-2 border rounded text-sm bg-white"
+        >
+          <option value="none">No activation (linear)</option>
+          <option value="relu">ReLU</option>
+          <option value="sigmoid">Sigmoid</option>
+          <option value="tanh">Tanh</option>
+        </select>
+        
+        <Settings />
+      </div>
       
       <div className="text-sm font-mono">
         <span className="text-gray-500">Epoch:</span> {state.epoch}
@@ -51,4 +55,3 @@ export default function Controls() {
     </div>
   )
 }
-

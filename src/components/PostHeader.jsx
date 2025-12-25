@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 
-export default function PostHeader({ title, subtitle, date, slug, size = 'small' }) {
+export default function PostHeader({ title, subtitle, date, authors, slug, size = 'small' }) {
   const isLarge = size === 'large'
   
   return (
@@ -22,14 +22,27 @@ export default function PostHeader({ title, subtitle, date, slug, size = 'small'
           {subtitle}
         </motion.p>
       )}
-      {date && (
-        <motion.span 
-          layoutId={slug ? `date-${slug}` : undefined}
-          className={isLarge ? 'text-gray-400 text-sm mt-2 block' : 'text-gray-400 text-xs mt-1 block'}
-        >
-          {date}
-        </motion.span>
-      )}
+      <div className={isLarge ? 'mt-3 flex items-center gap-2 text-sm' : 'mt-1 flex items-center gap-2 text-xs'}>
+        {authors && authors.length > 0 && (
+          <motion.span 
+            layoutId={slug ? `authors-${slug}` : undefined}
+            className="text-gray-600"
+          >
+            {authors.join(' & ')}
+          </motion.span>
+        )}
+        {authors && authors.length > 0 && date && (
+          <span className="text-gray-300">·</span>
+        )}
+        {date && (
+          <motion.span 
+            layoutId={slug ? `date-${slug}` : undefined}
+            className="text-gray-400"
+          >
+            {date}
+          </motion.span>
+        )}
+      </div>
     </div>
   )
 }

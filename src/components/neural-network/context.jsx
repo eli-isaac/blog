@@ -4,25 +4,62 @@ import { createNetwork, trainStep } from './network'
 
 const NeuralNetworkContext = createContext()
 
-function createInitialStates() {
-  return problems.map(p => ({
-    network: createNetwork(p.hiddenSize, p.inputSize, p.outputSize),
+function createInitialState(problem, hiddenSize) {
+  return {
+    network: createNetwork(hiddenSize, problem.inputSize, problem.outputSize),
     epoch: 0,
     loss: 1,
-    data: p.generateData(),
-  }))
+    data: problem.generateData(),
+  }
+}
+
+function createInitialStates(hiddenSizes) {
+  return problems.map((p, i) => createInitialState(p, hiddenSizes[i]))
 }
 
 export function NeuralNetworkProvider({ children }) {
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0)
   const [activation, setActivation] = useState('relu')
   const [isTraining, setIsTraining] = useState(false)
-  const [tick, setTick] = useState(0) // Force re-renders
+  const [tick, setTick] = useState(0)
   
-  const problemStates = useRef(createInitialStates())
+  // Hidden sizes per problem
+  const [hiddenSizes, setHiddenSizes] = useState(() => 
+    problems.map(p => p.hiddenSize)
+  )
+  
+  const problemStates = useRef(createInitialStates(hiddenSizes))
 
   const currentProblem = problems[currentProblemIndex]
   const currentState = problemStates.current[currentProblemIndex]
+  const hiddenSize = hiddenSizes[currentProblemIndex]
+
+  // Reset when activation changes
+  const handleActivationChange = useCallback((newActivation) => {
+    setActivation(newActivation)
+    setIsTraining(false)
+    // Reset current problem
+    problemStates.current[currentProblemIndex] = createInitialState(
+      problems[currentProblemIndex], 
+      hiddenSizes[currentProblemIndex]
+    )
+    setTick(t => t + 1)
+  }, [currentProblemIndex, hiddenSizes])
+
+  const setHiddenSize = useCallback((size) => {
+    setHiddenSizes(prev => {
+      const next = [...prev]
+      next[currentProblemIndex] = size
+      return next
+    })
+    setIsTraining(false)
+    // Reset with new hidden size
+    problemStates.current[currentProblemIndex] = createInitialState(
+      problems[currentProblemIndex], 
+      size
+    )
+    setTick(t => t + 1)
+  }, [currentProblemIndex])
 
   const nextProblem = useCallback(() => {
     setIsTraining(false)
@@ -36,20 +73,17 @@ export function NeuralNetworkProvider({ children }) {
 
   const reset = useCallback(() => {
     setIsTraining(false)
-    const p = problems[currentProblemIndex]
-    problemStates.current[currentProblemIndex] = {
-      network: createNetwork(p.hiddenSize, p.inputSize, p.outputSize),
-      epoch: 0,
-      loss: 1,
-      data: p.generateData(),
-    }
+    problemStates.current[currentProblemIndex] = createInitialState(
+      problems[currentProblemIndex], 
+      hiddenSizes[currentProblemIndex]
+    )
     setTick(t => t + 1)
-  }, [currentProblemIndex])
+  }, [currentProblemIndex, hiddenSizes])
 
   const train = useCallback(() => {
     const state = problemStates.current[currentProblemIndex]
     const problem = problems[currentProblemIndex]
-    const loss = trainStep(state.network, state.data, activation, problem.outputSize)
+    const loss = trainStep(state.network, state.data, activation)
     state.epoch += 1
     state.loss = loss
     setTick(t => t + 1)
@@ -62,7 +96,7 @@ export function NeuralNetworkProvider({ children }) {
       problemCount: problems.length,
       state: currentState,
       activation,
-      setActivation,
+      setActivation: handleActivationChange,
       isTraining,
       setIsTraining,
       nextProblem,
@@ -70,6 +104,8 @@ export function NeuralNetworkProvider({ children }) {
       reset,
       train,
       tick,
+      hiddenSize,
+      setHiddenSize,
     }}>
       {children}
     </NeuralNetworkContext.Provider>
