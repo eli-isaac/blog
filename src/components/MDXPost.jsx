@@ -47,9 +47,16 @@ const components = {
   ActivationGraph,
   NeuralNetworkDemo,
   
-  // Reference component for citations
-  Reference: ({ children }) => (
-    <span className="text-gray-500">({children})</span>
+  // Citation component with link
+  Cite: ({ authors, year, url }) => (
+    <a 
+      href={url} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-gray-500 hover:text-gray-700 hover:underline"
+    >
+      ({authors}, {year})
+    </a>
   ),
 }
 
