@@ -8,21 +8,21 @@ export const meta = {
 
 ## Why activation functions?
 
-An activation function in the context of neural networks is a **non-linear** function typically applied right after a linear transformation. A single layer computes:
+An activation function in the context of neural networks is a **non-linear** function typically applied right after a linear transformation. A single layer computes
 
 $$z = Wx + b, \quad a = \phi(z)$$
 
-where $W$ and $b$ define a linear map and $\phi$ is the activation function. The activation function is usually applied element-wise:
+where $W$ and $b$ define a linear map and $\phi$ is the activation function. The activation function is usually applied element-wise
 
 $$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
 
-Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function of two inputs $x_1$ and $x_2$ looks like:
+Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function of two inputs $x_1$ and $x_2$ has the form
 
 $$f(x_1, x_2) = a x_1 + b x_2$$
 
 Each input contributes independently, and changes in input produce a constant change in output. Increase $x_1$ by 1, and the output always changes by exactly $a$, regardless of the current values of $x_1$ or $x_2$.
 
-Linear functions are quite limited. Here are some things that they cannot do:
+Linear functions are quite limited. They cannot
 
 - have the rate of change vary as the input changes
 - have thresholds where something significant happens at the output
@@ -30,7 +30,7 @@ Linear functions are quite limited. Here are some things that they cannot do:
 
 When we add non-linear activation functions after linear layers, we can start doing more interesting things. A single linear layer followed by an activation function is still quite limited in what it can represent. But the key insight is that we can stack these layers. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, or even just two with enough neurons, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
 
-You might wonder: why not just stack linear layers without activation functions? The problem is that composing linear functions produces another linear function. Consider two layers where the output of the first feeds into the second:
+You might wonder why we can't just stack linear layers without activation functions. The problem is that composing linear functions produces another linear function. Consider two layers where the output of the first feeds into the second.
 
 $$
 \begin{aligned}
@@ -50,11 +50,11 @@ The earliest activation functions were inspired by biology. Over time, that moti
 
 ## Step function (1943)
 
-The first neural network models aimed to mimic biological neurons. A neuron receives inputs, weighs them, and "fires" if the total exceeds a threshold. McCulloch and Pitts formalized this as <Cite authors="McCulloch & Pitts" year="1943" url="https://doi.org/10.1007/BF02478259" />:
+The first neural network models aimed to mimic biological neurons. A neuron receives inputs, weighs them, and "fires" if the total exceeds a threshold. McCulloch and Pitts formalized this as <Cite authors="McCulloch & Pitts" year="1943" url="https://doi.org/10.1007/BF02478259" />
 
 $$y = \text{step}\left(\sum_i w_i x_i - \theta\right)$$
 
-where $w_i$ are weights, $x_i$ are inputs, and $\theta$ is a threshold. The step function outputs 1 if the weighted sum exceeds the threshold, and 0 otherwise:
+where $w_i$ are weights, $x_i$ are inputs, and $\theta$ is a threshold. The step function outputs 1 if the weighted sum exceeds the threshold, and 0 otherwise.
 
 $$\text{step}(z) = \begin{cases} 1 & z \ge 0 \\ 0 & z < 0 \end{cases}$$
 
@@ -62,43 +62,45 @@ $$\text{step}(z) = \begin{cases} 1 & z \ge 0 \\ 0 & z < 0 \end{cases}$$
 
 Rosenblatt's perceptron <Cite authors="Rosenblatt" year="1958" url="https://doi.org/10.1037/h0042519" /> used this activation and could learn simple classifications through a weight update rule.
 
-But the step function has a fatal flaw for gradient-based learning. Its derivative is zero everywhere except at the threshold, where it's undefined. This creates two problems: gradients provide no signal for how to adjust weights, and even if we somehow knew which direction to move, the output jumps discontinuously. There's no way to make small, controlled updates. Backpropagation cannot work under these conditions.
+But the step function has a fatal flaw for gradient-based learning. Its derivative is zero everywhere except at the threshold, where it's undefined. This creates two problems. Gradients provide no signal for how to adjust weights, and even if we somehow knew which direction to move, the output jumps discontinuously. There's no way to make small, controlled updates. Backpropagation cannot work under these conditions.
 
 ## Sigmoid (1986)
 
-The solution was to smooth the step into a differentiable curve. The **logistic sigmoid** became the standard activation for early multi-layer networks trained with backpropagation <Cite authors="Rumelhart, Hinton & Williams" year="1986" url="https://doi.org/10.1038/323533a0" />:
+The solution was to smooth the step into a differentiable curve. The **logistic sigmoid** became the standard activation for early multi-layer networks trained with backpropagation <Cite authors="Rumelhart, Hinton & Williams" year="1986" url="https://doi.org/10.1038/323533a0" />.
 
 $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
 
 <ActivationGraph type="sigmoid" />
 
-Sigmoid behaves like a soft step: large negative inputs map near 0, large positive inputs map near 1, with a smooth transition between. Its derivative is well-defined everywhere:
+Sigmoid behaves like a soft step: large negative inputs map near 0, large positive inputs map near 1, with a smooth transition between. Its derivative is well-defined everywhere.
 
 $$\sigma'(z) = \sigma(z)(1 - \sigma(z))$$
 
 This allowed gradients to flow backward through networks, enabling training of deeper architectures. The output range $(0, 1)$ also made sigmoid natural for probabilistic outputs.
 
-However, sigmoid saturates at extreme values, so the derivative approaches zero, causing gradients to vanish during backpropagation. This made training deep networks slow and difficult.
+However, sigmoid has two issues. First, it saturates at extreme values, so the derivative approaches zero, causing gradients to vanish during backpropagation. Second, its outputs are always positive, which can cause optimization problems when gradients tend to push all weights in the same direction <Cite authors="LeCun et al." year="1998" url="http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf" />.
 
 ## Tanh
 
-A simple improvement: shift sigmoid to be zero-centered.
+Tanh is essentially a rescaled sigmoid that maps inputs to $(-1, 1)$ instead of $(0, 1)$.
 
 $$\tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}$$
 
 <ActivationGraph type="tanh" yRange={[-1.5, 1.5]} />
 
-Tanh maps inputs to $(-1, 1)$ instead of $(0, 1)$. Zero-centered outputs often help optimization since gradients don't systematically push weights in one direction. But tanh still saturates at large magnitudes, so the vanishing gradient problem persists.
+With outputs centered around zero, the optimization issues from always-positive activations go away. Tanh became the default activation for many years and was used in influential early work on convolutional networks and recurrent networks.
+
+However, tanh still saturates at large magnitudes, so the vanishing gradient problem persists. Training very deep networks remained difficult.
 
 ## ReLU (2010)
 
-For decades, sigmoid and tanh dominated. Then came a surprisingly simple alternative that changed everything:
+For decades, sigmoid and tanh dominated. Then came a surprisingly simple alternative that changed everything.
 
 $$\text{ReLU}(z) = \max(0, z)$$
 
 <ActivationGraph type="relu" yRange={[-1, 5]} />
 
-ReLU (the Rectified Linear Unit) outputs zero for negative inputs and passes positive inputs unchanged <Cite authors="Nair & Hinton" year="2010" url="https://www.cs.toronto.edu/~hinton/absps/reluICML.pdf" />. It never saturates for positive values, so gradients flow freely. It's also computationally trivial, just a comparison and a maximum.
+ReLU (the Rectified Linear Unit) outputs zero for negative inputs and passes positive inputs unchanged <Cite authors="Nair & Hinton" year="2010" url="https://www.cs.toronto.edu/~hinton/absps/reluICML.pdf" />. It never saturates for positive values, so gradients flow freely. It's also computationally cheap, requiring no exponentials or divisions, just a threshold check.
 
 ReLU made training deep networks dramatically easier. It became the default activation for most architectures.
 
@@ -106,7 +108,7 @@ The main drawback is "dying ReLU": if a neuron's inputs consistently land in the
 
 ## Leaky ReLU
 
-A simple fix for dying neurons: allow a small gradient for negative inputs.
+A simple fix for dying neurons is to allow a small gradient for negative inputs.
 
 $$\text{LeakyReLU}(z) = \max(\alpha z, z), \quad \alpha \approx 0.01$$
 
@@ -116,11 +118,19 @@ Instead of flatlining at zero, negative inputs produce a small negative output. 
 
 ## GELU (2016)
 
-Modern architectures like Transformers use smoother alternatives. GELU gates inputs probabilistically based on their magnitude <Cite authors="Hendrycks & Gimpel" year="2016" url="https://arxiv.org/abs/1606.08415" />:
+Modern architectures like Transformers use smoother alternatives <Cite authors="Hendrycks & Gimpel" year="2016" url="https://arxiv.org/abs/1606.08415" />. GELU multiplies the input by a value between 0 and 1 that depends on how large the input is.
 
 $$\text{GELU}(z) = z \cdot \Phi(z)$$
 
-where $\Phi(z)$ is the cumulative distribution function of the standard normal.
+Here $\Phi(z)$ is the probability that a random sample from a standard normal distribution is less than $z$.
+
+$$\Phi(z) = \frac{1}{2}\left[1 + \text{erf}\left(\frac{z}{\sqrt{2}}\right)\right]$$
+
+where $\text{erf}$ is the error function. For large positive $z$, this probability approaches 1, so the input passes through almost unchanged. For large negative $z$, the probability approaches 0, so the input is nearly zeroed. For values near zero, the input is partially scaled down.
+
+In practice, a fast approximation is often used:
+
+$$\text{GELU}(z) \approx 0.5z\left(1 + \tanh\left[\sqrt{\frac{2}{\pi}}\left(z + 0.044715z^3\right)\right]\right)$$
 
 <ActivationGraph type="gelu" yRange={[-1, 5]} />
 
@@ -128,6 +138,6 @@ Unlike ReLU's hard cutoff at zero, GELU smoothly transitions. Small negative val
 
 ## Summary
 
-Activation functions exist to introduce non-linearity. The story is one of gradual refinement: from biologically-inspired step functions that couldn't be trained with gradients, to smooth sigmoids that enabled backpropagation, to ReLU that finally made deep networks practical, to modern variants tuned for specific architectures.
+Activation functions exist to introduce non-linearity. The story is one of gradual refinement, from biologically-inspired step functions that couldn't be trained with gradients, to smooth sigmoids that enabled backpropagation, to ReLU that finally made deep networks practical, to modern variants tuned for specific architectures.
 
 The biological motivation faded long ago. What remains is a simple requirement: break linearity so that depth means something.
