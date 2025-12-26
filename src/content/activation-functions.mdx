@@ -16,15 +16,19 @@ where $W$ and $b$ define a linear map and $\phi$ is the activation function. The
 
 $$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
 
-Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function is something like $ax + by$: each input contributes independently, and changes in input produce a constant change in output. Increase $x$ by 1, and the output always changes by the same amount $a$, regardless of what $x$ or $y$ currently are.
+Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function of two inputs $x_1$ and $x_2$ looks like:
 
-This is limiting. Here are some things that a linear function cannot do:
+$$f(x_1, x_2) = a x_1 + b x_2$$
+
+Each input contributes independently, and changes in input produce a constant change in output. Increase $x_1$ by 1, and the output always changes by exactly $a$, regardless of the current values of $x_1$ or $x_2$.
+
+Linear functions are quite limited. Here are some things that they cannot do:
 
 - have the rate of change vary as the input changes
 - have thresholds where something significant happens at the output
-- capture interactions between inputs, like $x \cdot y$
+- capture interactions between inputs, like $x_1 \cdot x_2$
 
-When we add non-linear activation functions after linear layers, we can start doing more interesting things. A single linear layer followed by an activation function is still quite limited in what it can represent. But the key insight is that we can stack these layers. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
+When we add non-linear activation functions after linear layers, we can start doing more interesting things. A single linear layer followed by an activation function is still quite limited in what it can represent. But the key insight is that we can stack these layers. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, or even just two with enough neurons, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
 
 You might wonder: why not just stack linear layers without activation functions? The problem is that composing linear functions produces another linear function. Consider two layers where the output of the first feeds into the second:
 
