@@ -12,19 +12,33 @@ An activation function is a **non-linear** function applied inside a neural netw
 
 $$z = Wx + b, \quad a = \phi(z)$$
 
-where $W$ and $b$ define a linear map and $\phi$ is the activation function.
+where $W$ and $b$ define a linear map and $\phi$ is the activation function. The activation function is usually applied element-wise:
 
-Why is non-linearity necessary? Without it, stacking layers achieves nothing. Two linear layers:
+$$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
 
-$$h = W_1x + b_1, \quad y = W_2h + b_2$$
+Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function is something like $ax + by$: each input contributes independently, and changes in input produce a constant change in output. Increase $x$ by 1, and the output always changes by the same amount $a$, regardless of what $x$ or $y$ currently are.
 
-collapse into a single linear map:
+This is limiting. Here are some things that a linear function cannot do:
 
-$$y = (W_2W_1)x + (W_2b_1 + b_2)$$
+- have the rate of change vary as the input changes
+- have thresholds where something significant happens at the output
+- capture interactions between inputs, like $x \cdot y$
 
-No matter how deep the network, the result is equivalent to one layer. Linear functions cannot model thresholds, varying rates of change, or interactions between inputs. They are restricted to simple additive effects like $ax + by$.
+When we add non-linear activation functions after linear layers, we can start doing more interesting things. A single linear layer followed by an activation function is still quite limited in what it can represent. But the key insight is that we can stack these layers. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
 
-Non-linear activations break this collapse. Once applied, layers can no longer be merged. This allows deep networks to build rich representations and approximate complex functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
+You might wonder: why not just stack linear layers without activation functions? The problem is that composing linear functions produces another linear function. Consider two layers where the output of the first feeds into the second:
+
+$$
+\begin{aligned}
+y &= W_2 (W_1 x + b_1) + b_2 \\
+  &= W_2 W_1 x + W_2 b_1 + b_2 \\
+  &= W' x + b'
+\end{aligned}
+$$
+
+where $W' = W_2 W_1$ and $b' = W_2 b_1 + b_2$. The two layers collapse into a single linear transformation.
+
+No matter how many layers you stack, the result is equivalent to a single linear transformation. Depth buys you nothing. The activation functions are what prevent this collapse. They ensure that each layer's contribution cannot be absorbed into the next, allowing the network to build up complex representations layer by layer.
 
 <NeuralNetworkDemo />
 
