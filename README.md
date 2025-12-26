@@ -1,16 +1,117 @@
-# React + Vite
+# Isaac's Ram
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A minimalist blog and portfolio built with React, Vite, and MDX.
 
-Currently, two official plugins are available:
+## Getting Started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+src/
+├── content/                    # MDX blog posts
+│   └── activation-functions.mdx
+├── components/
+│   ├── MDXPost.jsx             # Post layout + component injection
+│   ├── Posts.jsx               # Posts list (reads from MDX metadata)
+│   └── ...
+├── pages/
+│   ├── Home.jsx
+│   └── About.jsx
+└── App.jsx                     # Routes
+```
 
-## Expanding the ESLint configuration
+## Adding a New Post
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Create the MDX file
+
+Create `src/content/my-new-post.mdx`:
+
+```mdx
+export const meta = {
+  title: "My New Post",
+  subtitle: "A brief description",
+  date: "2025-12-26",
+  authors: ["Your Name"],
+  slug: "my-new-post"
+}
+
+## Introduction
+
+Your content here. You can use **markdown** and math:
+
+$$E = mc^2$$
+
+And custom React components:
+
+<ActivationGraph type="sigmoid" />
+```
+
+### 2. Add the route
+
+In `src/App.jsx`, add the import and route:
+
+```jsx
+// Add import at the top
+import MyNewPostContent, { meta as myNewPostMeta } from './content/my-new-post.mdx'
+
+// Add route inside <Routes>
+<Route 
+  path="/posts/my-new-post" 
+  element={<MDXPost meta={myNewPostMeta} Content={MyNewPostContent} />} 
+/>
+```
+
+### 3. Add to posts list
+
+In `src/components/Posts.jsx`:
+
+```jsx
+// Add import
+import { meta as myNewPost } from '../content/my-new-post.mdx'
+
+// Add to posts array
+const posts = [
+  activationFunctions,
+  myNewPost,  // ← add here
+]
+```
+
+## Using Components in MDX
+
+### Global components (available in all posts)
+
+Components in `MDXPost.jsx` are available everywhere without importing:
+
+- `<ActivationGraph type="sigmoid" />`
+- `<NeuralNetworkDemo />`
+- `<Reference>Citation here</Reference>`
+
+To add a new global component, add it to the `components` object in `src/components/MDXPost.jsx`.
+
+### One-off components
+
+Import directly in the MDX file:
+
+```mdx
+import MySpecialWidget from '../components/MySpecialWidget'
+
+<MySpecialWidget />
+```
+
+## Math
+
+- Inline math: `$x^2$`
+- Block math (centered): `$$E = mc^2$$`
+
+## Deployment
+
+Configured for Netlify. The `public/_redirects` file handles SPA routing.
+
+```bash
+npm run build
+```

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
 
 * {
   box-sizing: border-box;
@@ -6,4 +7,16 @@
 
 body {
   margin: 0;
+}
+
+/* Center block math equations */
+.katex-display {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+/* Center paragraphs that only contain math (block equations) */
+p:has(> .katex:only-child) {
+  text-align: center;
+  margin: 1.5rem 0;
 }

@@ -1,0 +1,189 @@
+export const meta = {
+  title: "Activation Functions",
+  subtitle: "Why neural networks need non-linearity",
+  date: "2025-12-25",
+  authors: ["Eli Plutchok", "Isaac Trank"],
+  slug: "activation-functions-in-neural-networks"
+}
+
+## Intro
+
+An activation function is a **non-linear** function used inside a neural network, 
+usually applied element-wise right after a linear transformation. A typical layer computes:
+
+$$z = Wx + b, \quad a = \phi(z)$$
+
+where $W$ and $b$ define a linear (more precisely, affine) map and $\phi$ is the activation function.
+
+Activation functions are necessary because without them, a neural network can only represent 
+linear or affine functions of its input. A linear (affine) function is one where the output 
+is a weighted sum of the inputs plus a constant offset. Each input feature affects the output 
+independently and in a fixed way: increasing a feature always increases or decreases the output 
+at a constant rate. There is no notion of thresholds, changing behavior, or interactions between inputs.
+
+In two dimensions, a linear function corresponds to a straight line (or a flat plane when 
+mapping from 2D to 1D). Non-linear functions curve, bend, or change slope.
+
+## Early history and step functions
+
+The earliest activation functions were motivated by biological neurons. The idea was simple: 
+compute a weighted sum of inputs, then decide whether the neuron "fires" or not.
+
+This led to the **step function**, used in early models such as the McCulloch–Pitts 
+neuron and Rosenblatt's perceptron <Reference>McCulloch & Pitts, 1943; Rosenblatt, 1958</Reference>:
+
+$$\text{step}(z) = \begin{cases} 1 & z \ge 0 \\ 0 & z < 0 \end{cases}$$
+
+<ActivationGraph type="step" />
+
+While conceptually simple, this function has a fatal flaw for modern training methods. It is 
+not differentiable at the threshold, and its derivative is zero everywhere else. As a result, 
+small changes to the input almost never produce any change in the output.
+
+As gradient-based training methods such as backpropagation became 
+standard <Reference>Rumelhart, Hinton & Williams, 1986</Reference>, differentiability became 
+essential. Backpropagation relies on gradients to tell each parameter which direction to move 
+in order to reduce the loss.
+
+With a step function, the gradient is either undefined or zero, providing no signal for how 
+to adjust the weights. Even if a neuron is "close" to flipping from 0 to 1, the gradient 
+gives no indication of that. Backpropagation simply cannot function under these conditions.
+
+## Smooth activations and the logistic sigmoid
+
+To address this, step functions were replaced by smooth, differentiable alternatives. The most 
+prominent early example is the **logistic sigmoid** (often just called *sigmoid*):
+
+$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+<ActivationGraph type="sigmoid" />
+
+This function behaves like a softened step: large negative inputs map close to 0, large positive 
+inputs map close to 1, and the transition between them is smooth. Crucially, it has a well-defined 
+derivative everywhere:
+
+$$\sigma'(z) = \sigma(z)\bigl(1 - \sigma(z)\bigr)$$
+
+Unlike a step function, shifting the input slightly always produces at least a small change in 
+the output. This allows gradients to propagate backward through the network, enabling effective 
+training via backpropagation.
+
+Over time, however, the motivation for activation functions shifted away from biological realism. 
+What ultimately mattered was not that these functions resembled neurons, but that they 
+introduced **non-linearity**.
+
+## Why non-linearity matters
+
+Without a non-linearity, every layer in a neural network performs a linear (affine) transformation. 
+Stacking such layers does not increase expressive power: composing linear functions simply results 
+in another linear function.
+
+For example, two layers:
+
+$$h = W_1x + b_1, \quad y = W_2h + b_2$$
+
+collapse into:
+
+$$y = (W_2W_1)x + (W_2b_1 + b_2)$$
+
+which is just a single affine map. Depth alone achieves nothing if no non-linearities are present.
+
+This limitation is severe. Linear functions cannot:
+
+- change behavior after a threshold
+- vary the rate at which outputs grow or shrink
+- model interactions where one input only matters when another lies in a specific range
+
+They are restricted to additive effects of the form $ax + by$.
+
+Introducing a non-linear activation breaks this collapse. Once a non-linearity is applied, layers 
+can no longer be merged into a single linear map. By stacking linear transformations with non-linear 
+activations, neural networks can build increasingly rich representations and, with enough capacity, 
+approximate highly complex functions <Reference>Cybenko, 1989</Reference>.
+
+<NeuralNetworkDemo />
+
+## Common activation functions
+
+### Step function
+
+$$\text{step}(z) = \begin{cases} 1 & z \ge 0 \\ 0 & z < 0 \end{cases}$$
+
+<ActivationGraph type="step" />
+
+Historically important as the first activation function used in neural models, but incompatible 
+with gradient-based learning due to non-differentiability and zero 
+gradients <Reference>McCulloch & Pitts, 1943; Rosenblatt, 1958</Reference>.
+
+### Logistic sigmoid
+
+$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+<ActivationGraph type="sigmoid" />
+
+Introduced as a differentiable alternative to the step function, enabling the use of 
+backpropagation in multi-layer networks <Reference>Rumelhart et al., 1986</Reference>. Its output 
+range $(0,1)$ made it natural for probabilistic interpretations.
+
+However, sigmoid saturates for large positive or negative inputs, leading to vanishing gradients 
+and slow training in deep networks.
+
+### Tanh
+
+$$\tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}$$
+
+<ActivationGraph type="tanh" yRange={[-1.5, 1.5]} />
+
+A rescaled and shifted sigmoid mapping inputs to $(-1, 1)$. Being zero-centered 
+often improves optimization compared to sigmoid. Like sigmoid, tanh suffers from saturation and 
+vanishing gradients at large magnitudes.
+
+### ReLU (Rectified Linear Unit)
+
+$$\text{ReLU}(z) = \max(0, z)$$
+
+<ActivationGraph type="relu" yRange={[-1, 5]} />
+
+Introduced to address saturation issues in sigmoid and tanh. ReLU is simple, computationally 
+efficient, and maintains strong gradients for positive inputs, which made deep networks much 
+easier to train <Reference>Nair & Hinton, 2010</Reference>.
+
+Its main drawback is the "dying ReLU" problem, where neurons can become stuck outputting zero 
+if they consistently receive negative inputs.
+
+### Leaky ReLU
+
+$$\text{LeakyReLU}(z) = \max(\alpha z, z), \quad \alpha \ll 1$$
+
+<ActivationGraph type="leakyRelu" yRange={[-1, 5]} />
+
+Proposed to mitigate dying ReLUs by allowing a small, non-zero gradient for negative inputs. 
+This helps keep neurons active during training while preserving most benefits of ReLU.
+
+### GELU (Gaussian Error Linear Unit)
+
+$$\text{GELU}(z) = z \cdot \Phi(z)$$
+
+where $\Phi(z)$ is the CDF of the standard normal distribution.
+
+<ActivationGraph type="gelu" yRange={[-1, 5]} />
+
+GELU smoothly gates inputs based on their magnitude rather than applying a hard cutoff. It was 
+introduced to better match the behavior of stochastic regularization and has become standard 
+in Transformer architectures <Reference>Hendrycks & Gimpel, 2016</Reference>.
+
+## Closing remark
+
+Activation functions exist to introduce non-linearity. Without them, neural networks collapse 
+into linear models regardless of depth. With them, simple linear building blocks can be composed 
+into systems capable of representing complex, highly structured functions.
+
+## References
+
+- McCulloch, W. S., & Pitts, W. (1943). *A logical calculus of the ideas immanent in nervous activity*.
+- Rosenblatt, F. (1958). *The perceptron: A probabilistic model for information storage and organization in the brain*.
+- Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). *Learning representations by back-propagating errors*.
+- Cybenko, G. (1989). *Approximation by superpositions of a sigmoidal function*.
+- Nair, V., & Hinton, G. E. (2010). *Rectified linear units improve restricted Boltzmann machines*.
+- Hendrycks, D., & Gimpel, K. (2016). *Gaussian Error Linear Units (GELUs)*.
+

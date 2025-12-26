@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
-import posts from '../posts.json'
 import PostHeader from './PostHeader'
 
-function getSlug(link) {
-  return link.split('/').pop()
-}
+// Import metadata from all MDX posts
+import { meta as activationFunctions } from '../content/activation-functions.mdx'
+
+// Build posts list from MDX metadata
+const posts = [
+  activationFunctions,
+]
 
 export default function Posts() {
   return (
@@ -12,13 +15,13 @@ export default function Posts() {
       <ul className="space-y-6">
         {posts.map((post, i) => (
           <li key={i} className="pb-2">
-            <Link to={post.link} className="block group hover:opacity-70">
+            <Link to={`/posts/${post.slug}`} className="block group hover:opacity-70">
               <PostHeader 
                 title={post.title}
                 subtitle={post.subtitle}
                 date={post.date}
                 authors={post.authors}
-                slug={getSlug(post.link)}
+                slug={post.slug}
                 size="small"
               />
             </Link>
