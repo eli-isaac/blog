@@ -15,8 +15,8 @@ body {
   margin: 1.5rem 0;
 }
 
-/* Center paragraphs that only contain math (block equations) */
-p:has(> .katex:only-child) {
+/* Block math wrapper */
+.block-math {
   text-align: center;
   margin: 1.5rem 0;
 }
