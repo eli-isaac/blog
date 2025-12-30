@@ -3,11 +3,9 @@ import { AnimatePresence } from 'framer-motion'
 import { SidebarProvider } from './context/SidebarContext'
 import Layout from './components/Layout'
 import MDXPost from './components/MDXPost'
-import Home from './pages/Home'
+import Posts from './pages/Posts'
 import About from './pages/About'
-
-// Import MDX posts
-import ActivationFunctionsContent, { meta as activationFunctionsMeta } from './content/activation-functions.mdx'
+import { posts } from './content/posts'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -17,11 +15,14 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/posts" replace />} />
-          <Route path="/posts" element={<Home />} />
-          <Route 
-            path="/posts/activation-functions-in-neural-networks" 
-            element={<MDXPost meta={activationFunctionsMeta} Content={ActivationFunctionsContent} />} 
-          />
+          <Route path="/posts" element={<Posts />} />
+          {posts.map((post) => (
+            <Route
+              key={post.meta.slug}
+              path={`/posts/${post.meta.slug}`}
+              element={<MDXPost meta={post.meta} Content={post.Content} />}
+            />
+          ))}
           <Route path="/about" element={<About />} />
         </Route>
       </Routes>
