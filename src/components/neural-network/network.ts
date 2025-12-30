@@ -1,5 +1,12 @@
+export type ActivationType = 'none' | 'relu' | 'sigmoid' | 'tanh'
+
+interface ActivationFn {
+  fn: (x: number) => number
+  dfn: (x: number) => number
+}
+
 // Activation functions
-export const activations = {
+export const activations: Record<ActivationType, ActivationFn> = {
   none: { 
     fn: x => x, 
     dfn: () => 1 
@@ -21,8 +28,30 @@ export const activations = {
   },
 }
 
+export interface Network {
+  inputSize: number
+  hiddenSize: number
+  outputSize: number
+  w1: number[][]
+  b1: number[]
+  w2: number[][]
+  b2: number[]
+}
+
+export interface DataPoint {
+  x: number[]
+  y: number | number[]
+}
+
+export interface ForwardResult {
+  hidden: number[]
+  hiddenAct: number[]
+  out: number[]
+  outAct: number[]
+}
+
 // Create a network with given architecture
-export function createNetwork(hiddenSize = 8, inputSize = 2, outputSize = 1) {
+export function createNetwork(hiddenSize = 8, inputSize = 2, outputSize = 1): Network {
   const rand = () => (Math.random() - 0.5) * 2
   return {
     inputSize,
@@ -36,7 +65,7 @@ export function createNetwork(hiddenSize = 8, inputSize = 2, outputSize = 1) {
 }
 
 // Forward pass
-export function forward(net, x, activation) {
+export function forward(net: Network, x: number[], activation: ActivationType): ForwardResult {
   const { fn } = activations[activation]
   
   // Hidden layer
@@ -54,7 +83,7 @@ export function forward(net, x, activation) {
     return sum
   })
   
-  let outAct
+  let outAct: number[]
   if (net.outputSize === 1) {
     // Binary: sigmoid
     outAct = out.map(o => 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, o)))))
@@ -70,7 +99,7 @@ export function forward(net, x, activation) {
 }
 
 // Backward pass and weight update
-function backward(net, x, y, activation, lr = 0.05) {
+function backward(net: Network, x: number[], y: number | number[], activation: ActivationType, lr = 0.05): number {
   const { dfn } = activations[activation]
   const { hidden, hiddenAct, outAct } = forward(net, x, activation)
   
@@ -110,14 +139,14 @@ function backward(net, x, y, activation, lr = 0.05) {
   return loss
 }
 
-function oneHot(index, size) {
-  const arr = Array(size).fill(0)
+function oneHot(index: number, size: number): number[] {
+  const arr = Array(size).fill(0) as number[]
   arr[index] = 1
   return arr
 }
 
 // Train one epoch
-export function trainStep(net, data, activation) {
+export function trainStep(net: Network, data: DataPoint[], activation: ActivationType): number {
   let totalLoss = 0
   const shuffled = [...data].sort(() => Math.random() - 0.5)
   for (const { x, y } of shuffled) {
@@ -127,11 +156,10 @@ export function trainStep(net, data, activation) {
 }
 
 // Get prediction (class index for multi-class, probability for binary)
-export function predict(net, x, activation) {
+export function predict(net: Network, x: number[], activation: ActivationType): number {
   const { outAct } = forward(net, x, activation)
   if (net.outputSize === 1) {
     return outAct[0]
   }
   return outAct.indexOf(Math.max(...outAct))
 }
-

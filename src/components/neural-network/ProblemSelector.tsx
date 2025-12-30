@@ -1,6 +1,12 @@
+import { ReactNode } from 'react'
 import { useNeuralNetwork } from './context'
 
-function Arrow({ direction, onClick }) {
+interface ArrowProps {
+  direction: 'left' | 'right'
+  onClick: () => void
+}
+
+function Arrow({ direction, onClick }: ArrowProps) {
   return (
     <button
       onClick={onClick}
@@ -18,7 +24,11 @@ function Arrow({ direction, onClick }) {
   )
 }
 
-export default function ProblemSelector({ children }) {
+interface ProblemSelectorProps {
+  children: ReactNode
+}
+
+export default function ProblemSelector({ children }: ProblemSelectorProps) {
   const { currentProblem, nextProblem, prevProblem, currentProblemIndex, problemCount } = useNeuralNetwork()
 
   return (
@@ -46,4 +56,3 @@ export default function ProblemSelector({ children }) {
     </div>
   )
 }
-

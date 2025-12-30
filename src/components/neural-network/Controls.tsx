@@ -1,5 +1,6 @@
 import { useNeuralNetwork } from './context'
 import Settings from './Settings'
+import type { ActivationType } from './network'
 
 export default function Controls() {
   const { 
@@ -35,7 +36,7 @@ export default function Controls() {
       <div className="flex items-center gap-2">
         <select
           value={activation}
-          onChange={(e) => setActivation(e.target.value)}
+          onChange={(e) => setActivation(e.target.value as ActivationType)}
           className="px-3 py-2 border rounded text-sm bg-white"
         >
           <option value="none">No activation (linear)</option>

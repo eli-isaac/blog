@@ -3,12 +3,12 @@ import { useNeuralNetwork } from './context'
 
 export default function TrainingLoop() {
   const { isTraining, train } = useNeuralNetwork()
-  const animationRef = useRef(null)
+  const animationRef = useRef<number | null>(null)
   const lastTrainRef = useRef(0)
 
   useEffect(() => {
     if (isTraining) {
-      const step = (timestamp) => {
+      const step = (timestamp: number) => {
         // Throttle to ~30 fps for smoother visuals
         if (timestamp - lastTrainRef.current > 33) {
           train()
@@ -32,4 +32,3 @@ export default function TrainingLoop() {
 
   return null
 }
-

@@ -43,7 +43,6 @@ export default function Layout() {
       <main className="flex-1 pt-16 md:pt-6 px-6">
         <Outlet />
       </main>
-
       <HomeButton />
     </div>
   )

@@ -1,6 +1,15 @@
 import { motion } from 'framer-motion'
 
-export default function PostHeader({ title, subtitle, date, authors, slug, size = 'small' }) {
+interface PostHeaderProps {
+  title: string
+  subtitle?: string
+  date?: string
+  authors?: string[]
+  slug?: string
+  size?: 'small' | 'large'
+}
+
+export default function PostHeader({ title, subtitle, date, authors, slug, size = 'small' }: PostHeaderProps) {
   const isLarge = size === 'large'
   
   return (

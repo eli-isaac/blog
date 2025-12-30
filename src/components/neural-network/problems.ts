@@ -1,6 +1,18 @@
-// Toy problem definitions
+import type { DataPoint } from './network'
 
-export const problems = [
+export interface Problem {
+  id: string
+  name: string
+  description: string
+  inputSize: number
+  hiddenSize: number
+  outputSize: number
+  visualType: '2d-binary' | 'grid'
+  generateData: () => DataPoint[]
+}
+
+// Toy problem definitions
+export const problems: Problem[] = [
   {
     id: 'xor',
     name: 'XOR Classification',
@@ -10,7 +22,7 @@ export const problems = [
     outputSize: 1,
     visualType: '2d-binary',
     generateData: () => {
-      const data = []
+      const data: DataPoint[] = []
       for (let i = 0; i < 100; i++) {
         const x1 = Math.random() * 2 - 1
         const x2 = Math.random() * 2 - 1
@@ -29,7 +41,7 @@ export const problems = [
     outputSize: 9, // 0+0=0 to 4+4=8
     visualType: 'grid',
     generateData: () => {
-      const data = []
+      const data: DataPoint[] = []
       for (let a = 0; a <= 4; a++) {
         for (let b = 0; b <= 4; b++) {
           // Normalize inputs to [-1, 1]
@@ -48,7 +60,7 @@ export const problems = [
     outputSize: 17, // 0*0=0 to 4*4=16
     visualType: 'grid',
     generateData: () => {
-      const data = []
+      const data: DataPoint[] = []
       for (let a = 0; a <= 4; a++) {
         for (let b = 0; b <= 4; b++) {
           data.push({ x: [a / 2 - 1, b / 2 - 1], y: a * b })
@@ -66,7 +78,7 @@ export const problems = [
     outputSize: 1,
     visualType: '2d-binary',
     generateData: () => {
-      const data = []
+      const data: DataPoint[] = []
       for (let i = 0; i < 100; i++) {
         const x1 = Math.random() * 2 - 1
         const x2 = Math.random() * 2 - 1
@@ -77,4 +89,3 @@ export const problems = [
     }
   },
 ]
-

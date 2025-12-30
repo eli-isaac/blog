@@ -1,7 +1,9 @@
 import { Mafs, Coordinates, Plot, Theme } from 'mafs'
 import 'mafs/core.css'
 
-const activationFunctions = {
+type ActivationType = 'step' | 'sigmoid' | 'tanh' | 'relu' | 'leakyRelu' | 'gelu'
+
+const activationFunctions: Record<ActivationType, (x: number) => number> = {
   step: (x) => x >= 0 ? 1 : 0,
   sigmoid: (x) => 1 / (1 + Math.exp(-x)),
   tanh: (x) => Math.tanh(x),
@@ -13,7 +15,12 @@ const activationFunctions = {
   }
 }
 
-export default function ActivationGraph({ type, yRange = [-0.5, 1.5] }) {
+interface ActivationGraphProps {
+  type: ActivationType
+  yRange?: [number, number]
+}
+
+export default function ActivationGraph({ type, yRange = [-0.5, 1.5] }: ActivationGraphProps) {
   const fn = activationFunctions[type]
   
   if (!fn) {

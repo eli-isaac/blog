@@ -1,15 +1,17 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useNeuralNetwork } from './context'
-import { forward, predict } from './network'
+import { forward, predict, Network, ActivationType } from './network'
+import type { Problem } from './problems'
 
 export default function Canvas() {
-  const canvasRef = useRef(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const { state, currentProblem, activation, tick } = useNeuralNetwork()
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const w = canvas.width
     const h = canvas.height
     
@@ -18,7 +20,7 @@ export default function Canvas() {
     if (currentProblem.visualType === '2d-binary') {
       draw2DBinary(ctx, w, h, state.network, state.data, activation)
     } else if (currentProblem.visualType === 'grid') {
-      drawGrid(ctx, w, h, state.network, state.data, activation, currentProblem)
+      drawGrid(ctx, w, h, state.network, activation, currentProblem)
     }
   }, [state, currentProblem, activation, tick])
 
@@ -36,7 +38,19 @@ export default function Canvas() {
   )
 }
 
-function draw2DBinary(ctx, w, h, network, data, activation) {
+interface DataPoint {
+  x: number[]
+  y: number | number[]
+}
+
+function draw2DBinary(
+  ctx: CanvasRenderingContext2D, 
+  w: number, 
+  h: number, 
+  network: Network, 
+  data: DataPoint[], 
+  activation: ActivationType
+) {
   const res = 4
   
   // Draw decision boundary
@@ -68,7 +82,14 @@ function draw2DBinary(ctx, w, h, network, data, activation) {
   })
 }
 
-function drawGrid(ctx, w, h, network, data, activation, problem) {
+function drawGrid(
+  ctx: CanvasRenderingContext2D, 
+  w: number, 
+  h: number, 
+  network: Network, 
+  activation: ActivationType, 
+  problem: Problem
+) {
   const cellW = w / 5
   const cellH = h / 5
   

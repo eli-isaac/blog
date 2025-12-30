@@ -1,6 +1,11 @@
 import { motion } from 'framer-motion'
+import { ReactNode } from 'react'
 
-export default function ArticleBody({ children }) {
+interface ArticleBodyProps {
+  children: ReactNode
+}
+
+export default function ArticleBody({ children }: ArticleBodyProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -12,4 +17,3 @@ export default function ArticleBody({ children }) {
     </motion.div>
   )
 }
-

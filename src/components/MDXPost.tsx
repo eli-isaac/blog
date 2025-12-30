@@ -1,16 +1,25 @@
-import { Children, isValidElement } from 'react'
+import { Children, isValidElement, ReactNode, ComponentType } from 'react'
+import type { MDXComponents } from 'mdx/types'
 import PostPage from './PostPage'
 import ActivationGraph from './ActivationGraph'
 import NeuralNetworkDemo from './NeuralNetworkDemo'
 
+export interface PostMeta {
+  title: string
+  subtitle?: string
+  date: string
+  authors?: string[]
+  slug: string
+}
+
 // Check if paragraph contains only math (for centering block equations)
-function isBlockMath(children) {
+function isBlockMath(children: ReactNode): boolean {
   const childArray = Children.toArray(children)
   // Block math: single child that's a span with katex class
   if (childArray.length === 1 && isValidElement(childArray[0])) {
     const child = childArray[0]
     // Check if it's a span (katex wraps in span)
-    if (child.type === 'span' && child.props?.className?.includes('katex')) {
+    if (child.type === 'span' && (child.props as { className?: string })?.className?.includes('katex')) {
       return true
     }
   }
@@ -18,7 +27,7 @@ function isBlockMath(children) {
 }
 
 // Custom components available in all MDX files
-const components = {
+const components: MDXComponents = {
   // Override default HTML elements with styled versions
   h2: ({ children }) => (
     <h2 className="text-xl font-bold mt-12 mb-4">{children}</h2>
@@ -48,7 +57,7 @@ const components = {
   NeuralNetworkDemo,
   
   // Citation component with link
-  Cite: ({ authors, year, url }) => (
+  Cite: ({ authors, year, url }: { authors: string; year: string; url: string }) => (
     <a 
       href={url} 
       target="_blank" 
@@ -60,7 +69,12 @@ const components = {
   ),
 }
 
-export default function MDXPost({ meta, Content }) {
+interface MDXPostProps {
+  meta: PostMeta
+  Content: ComponentType<{ components?: MDXComponents }>
+}
+
+export default function MDXPost({ meta, Content }: MDXPostProps) {
   return (
     <PostPage
       title={meta.title}
