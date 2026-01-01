@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import PostHeader from './PostHeader'
 import ArticleBody from './ArticleBody'
 
@@ -13,7 +14,10 @@ interface PostPageProps {
 
 export default function PostPage({ title, subtitle, date, authors, slug, children }: PostPageProps) {
   return (
-    <article className="pt-24 pb-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
+    <motion.article
+      layoutId={slug ? `post-shell-${slug}` : undefined}
+      className="pt-24 pb-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0"
+    >
       <header className="mb-8">
         <PostHeader 
           title={title}
@@ -28,6 +32,6 @@ export default function PostPage({ title, subtitle, date, authors, slug, childre
       <ArticleBody>
         {children}
       </ArticleBody>
-    </article>
+    </motion.article>
   )
 }

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, LayoutGroup } from 'framer-motion'
 import { SidebarProvider } from './context/SidebarContext'
 import Layout from './components/Layout'
 import MDXPost from './components/MDXPost'
@@ -34,7 +34,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <SidebarProvider>
-        <AnimatedRoutes />
+        <LayoutGroup>
+          <AnimatedRoutes />
+        </LayoutGroup>
       </SidebarProvider>
     </BrowserRouter>
   )

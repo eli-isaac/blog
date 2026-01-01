@@ -27,7 +27,7 @@ function isBlockMath(children: ReactNode): boolean {
 }
 
 // Custom components available in all MDX files
-const components: MDXComponents = {
+export const mdxComponents: MDXComponents = {
   // Override default HTML elements with styled versions
   h2: ({ children }) => (
     <h2 className="text-xl font-bold mt-12 mb-4">{children}</h2>
@@ -83,7 +83,7 @@ export default function MDXPost({ meta, Content }: MDXPostProps) {
       authors={meta.authors}
       slug={meta.slug}
     >
-      <Content components={components} />
+      <Content components={mdxComponents} />
     </PostPage>
   )
 }

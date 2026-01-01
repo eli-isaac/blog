@@ -1,12 +1,18 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useSidebar } from '../context/SidebarContext'
 import HomeButton from './HomeButton'
+import PostsBackground from './PostsBackground'
 
 export default function Layout() {
   const { isOpen, toggle, close } = useSidebar()
+  const location = useLocation()
+
+  const showPostsBackground = location.pathname.startsWith('/posts')
 
   return (
-    <div className="min-h-screen md:flex">
+    <div className="relative min-h-screen md:flex">
+      {showPostsBackground && <PostsBackground />}
+
       {/* Mobile toggle button */}
       <button 
         onClick={toggle}
@@ -30,17 +36,19 @@ export default function Layout() {
       <aside
         className={`
           fixed md:sticky top-0 left-0 h-screen z-40
-          bg-white w-64 p-6
+          bg-white/60 backdrop-blur-sm border-r border-slate-200/60 w-64 p-6
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
         `}
       >
+        {/* Sidebar background tint so the posts backdrop shows through */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-100/50 via-white/30 to-slate-100/50" />
         {/* Sidebar content */}
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 pt-16 md:pt-6 px-6">
+      <main className="relative z-10 flex-1 pt-16 md:pt-6 px-6">
         <Outlet />
       </main>
       <HomeButton />
