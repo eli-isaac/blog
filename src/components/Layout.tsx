@@ -11,8 +11,6 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-screen md:flex">
-      {showPostsBackground && <PostsBackground />}
-
       {/* Mobile toggle button */}
       <button 
         onClick={toggle}
@@ -36,14 +34,14 @@ export default function Layout() {
       <aside
         className={`
           fixed md:sticky top-0 left-0 h-screen z-40
-          bg-white/60 backdrop-blur-sm border-r border-slate-200/60 w-64 p-6
+          bg-white border-l border-r border-slate-200/60 w-64 p-6 overflow-hidden
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
         `}
       >
-        {/* Sidebar background tint so the posts backdrop shows through */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-100/50 via-white/30 to-slate-100/50" />
+        {/* Neural network background */}
+        {showPostsBackground && <PostsBackground />}
         {/* Sidebar content */}
       </aside>
 

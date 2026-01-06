@@ -48,19 +48,22 @@ export function PostPreview({ meta, onExpand, onNavigate }: PostPreviewProps) {
           slug={meta.slug}
           size="small"
         />
-        <motion.button
-          aria-label="Open preview"
-          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-600 transition-opacity duration-200 opacity-0 group-hover:opacity-100 group-hover:text-gray-900 pointer-events-none group-hover:pointer-events-auto cursor-pointer"
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onExpand()
-          }}
+        <div 
+          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto"
+          style={{ isolation: 'isolate', contain: 'layout' }}
         >
-          <PreviewIcon />
-        </motion.button>
+          <button
+            aria-label="Open preview"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-red-700 hover:text-red-800 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onExpand()
+            }}
+          >
+            <PreviewIcon />
+          </button>
+        </div>
       </div>
     </motion.article>
   )
@@ -80,7 +83,7 @@ export function PostPreviewModal({ meta, Content, onClose, onOpenArticle }: Post
       <motion.div
         key="modal"
         layoutId={`post-shell-${meta.slug}`}
-        className="fixed left-1/2 top-1/2 z-40 flex h-[80vh] w-[min(960px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl shadow-2xl"
+        className="fixed left-1/2 top-1/2 z-40 flex h-[70vh] w-[min(800px,88vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl shadow-2xl"
         style={{ backgroundColor: previewBg }}
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1, backgroundColor: previewBg }}
@@ -88,7 +91,7 @@ export function PostPreviewModal({ meta, Content, onClose, onOpenArticle }: Post
         transition={{ type: 'tween', duration: 0.18, ease: 'easeOut', backgroundColor: { duration: 0.18, ease: 'easeOut' } }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-4 border-b border-gray-100 px-8 py-9">
+        <div className="flex items-start gap-4 border-b border-gray-100 px-12 py-10">
           <PostHeader
             title={meta.title}
             subtitle={meta.subtitle}
@@ -100,7 +103,7 @@ export function PostPreviewModal({ meta, Content, onClose, onOpenArticle }: Post
           <div className="ml-auto flex items-center gap-2">
             <motion.button
               aria-label="Open full article"
-              className="inline-flex h-9 items-center justify-center rounded-full bg-gray-900/90 px-4 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-900 cursor-pointer"
+              className="inline-flex h-9 items-center justify-center rounded-full bg-red-800 px-4 text-sm font-medium text-white transition-colors duration-200 hover:bg-red-900 cursor-pointer"
               whileHover={{ scale: 1.0 }}
               whileTap={{ scale: 0.97 }}
               onClick={onOpenArticle}
@@ -118,7 +121,7 @@ export function PostPreviewModal({ meta, Content, onClose, onOpenArticle }: Post
             </motion.button>
           </div>
         </div>
-        <div className="scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent flex-1 overflow-y-auto px-10 pb-12 pt-8">
+        <div className="scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent flex-1 overflow-y-auto px-14 pb-14 pt-0">
           <ArticleBody>
             <Content components={mdxComponents} />
           </ArticleBody>

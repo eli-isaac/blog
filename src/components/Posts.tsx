@@ -19,14 +19,17 @@ export default function Posts() {
   return (
     <LayoutGroup>
       <div className="pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
-        <ul className="space-y-1">
-          {posts.map((post) => (
-            <li key={post.meta.slug} className="pb-0.5">
+        <ul>
+          {posts.map((post, index) => (
+            <li key={post.meta.slug}>
               <PostPreview
                 meta={post.meta}
                 onExpand={() => setActiveSlug(post.meta.slug)}
                 onNavigate={() => navigate(`/posts/${post.meta.slug}`)}
               />
+              {index < posts.length - 1 && (
+                <div className="mx-8 border-b border-gray-200/60" />
+              )}
             </li>
           ))}
         </ul>
