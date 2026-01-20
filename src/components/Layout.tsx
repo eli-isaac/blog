@@ -34,7 +34,7 @@ export default function Layout() {
       <aside
         className={`
           fixed md:sticky top-0 left-0 h-screen z-40
-          bg-white border-l border-r border-slate-200/60 w-64 p-6 overflow-hidden
+          bg-gradient-to-b from-red-50 to-red-100/80 border-l border-r border-red-200/60 w-64 p-6 overflow-hidden
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
