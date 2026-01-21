@@ -5,14 +5,14 @@ const portals: PortalConfig[] = [
   {
     id: 'posts',
     path: '/posts',
-    color: '200, 70, 70', // Muted red
+    color: '160, 80, 80', // Muted red
     radius: 8,
     label: 'Blog Posts',
   },
   {
     id: 'projects',
     path: '/projects',
-    color: '50, 120, 80', // Dark green
+    color: '80, 110, 90', // Muted green
     radius: 8,
     label: 'Projects',
   },

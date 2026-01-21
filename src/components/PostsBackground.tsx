@@ -7,32 +7,50 @@ import { useEffect, useRef } from 'react'
 // Node settings
 const NODE_COUNT = 100
 const NODE_MIN_RADIUS = 1.5
-const NODE_MAX_RADIUS = 5.5 // radius = MIN + random * (MAX - MIN)
+const NODE_MAX_RADIUS = 5.5
 const NODE_MIN_OPACITY = 0.1
 const NODE_MAX_OPACITY = 0.35
-const NODE_COLOR = '180, 180, 180' // RGB values
+const NODE_COLOR = '180, 180, 180'
 
 // Movement settings
-const NODE_SPEED = 0.3 // velocity multiplier
+const NODE_SPEED = 0.3
 
 // Connection settings
-const CONNECTION_DISTANCE = 120 // max distance for connections
-const CONNECTION_OPACITY = 0.12 // max opacity of lines
+const CONNECTION_DISTANCE = 120
+const CONNECTION_OPACITY = 0.12
 const CONNECTION_LINE_WIDTH = 0.5
-const CONNECTION_COLOR = '180, 180, 180' // RGB values
+const CONNECTION_COLOR = '180, 180, 180'
 
 // Flash settings
-const FLASH_CHANCE = 0.01 // probability per frame (0-1)
-const FLASH_MIN_DURATION = 1000 // milliseconds
-const FLASH_MAX_DURATION = 2000 // milliseconds
-const FLASH_GLOW_OPACITY = 0.3 // outer glow max opacity
-const FLASH_CORE_OPACITY = 0.75 // inner core max opacity
-const FLASH_GLOW_SIZE = 2 // multiplier for glow radius
-const FLASH_CORE_SIZE = 1.3 // multiplier for core radius
-const FLASH_GLOW_COLOR = '180, 50, 50' // RGB - dark red
-const FLASH_CORE_COLOR = '200, 60, 60' // RGB - dark red
+const FLASH_CHANCE = 0.01
+const FLASH_MIN_DURATION = 1000
+const FLASH_MAX_DURATION = 2000
+const FLASH_GLOW_OPACITY = 0.3
+const FLASH_CORE_OPACITY = 0.75
+const FLASH_GLOW_SIZE = 2
+const FLASH_CORE_SIZE = 1.3
 
 // =============================================================================
+
+export interface SidebarTheme {
+  flashGlowColor: string
+  flashCoreColor: string
+}
+
+export const SIDEBAR_THEMES = {
+  posts: {
+    flashGlowColor: '180, 50, 50',
+    flashCoreColor: '200, 60, 60',
+  },
+  projects: {
+    flashGlowColor: '40, 100, 60',
+    flashCoreColor: '50, 120, 80',
+  },
+} as const
+
+interface Props {
+  theme?: SidebarTheme
+}
 
 interface Node {
   x: number
@@ -48,7 +66,7 @@ interface Node {
 // Easing function for smooth fade out (starts fast, slows down)
 const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3)
 
-export default function PostsBackground() {
+export default function PostsBackground({ theme = SIDEBAR_THEMES.posts }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<Node[]>([])
@@ -141,13 +159,13 @@ export default function PostsBackground() {
           // Glow effect (outer)
           ctx.beginPath()
           ctx.arc(node.x, node.y, node.radius * FLASH_GLOW_SIZE, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${FLASH_GLOW_COLOR}, ${fadeMultiplier * FLASH_GLOW_OPACITY})`
+          ctx.fillStyle = `rgba(${theme.flashGlowColor}, ${fadeMultiplier * FLASH_GLOW_OPACITY})`
           ctx.fill()
 
           // Core (inner)
           ctx.beginPath()
           ctx.arc(node.x, node.y, node.radius * FLASH_CORE_SIZE, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${FLASH_CORE_COLOR}, ${fadeMultiplier * FLASH_CORE_OPACITY})`
+          ctx.fillStyle = `rgba(${theme.flashCoreColor}, ${fadeMultiplier * FLASH_CORE_OPACITY})`
           ctx.fill()
         } else {
           // Normal node
@@ -167,7 +185,7 @@ export default function PostsBackground() {
       window.removeEventListener('resize', resize)
       cancelAnimationFrame(animationRef.current)
     }
-  }, [])
+  }, [theme])
 
   return (
     <div

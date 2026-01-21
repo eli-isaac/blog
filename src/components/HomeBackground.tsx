@@ -11,28 +11,17 @@ const NODE_COUNT = 150
 const NODE_MIN_RADIUS = 2
 const NODE_MAX_RADIUS = 6
 const NODE_MIN_OPACITY = 0.15
-const NODE_MAX_OPACITY = 0.4
-const NODE_COLOR = '120, 120, 120'
+const NODE_MAX_OPACITY = 0.35
+const NODE_COLOR = '100, 100, 100'
 
 // Movement settings
 const NODE_SPEED = 0.4
 
 // Connection settings
-const CONNECTION_DISTANCE = 100
+const CONNECTION_DISTANCE = 140
 const CONNECTION_OPACITY = 0.15
-const CONNECTION_LINE_WIDTH = 0.8
-const CONNECTION_COLOR = '120, 120, 120'
-
-// Flash settings
-const FLASH_CHANCE = 0.008
-const FLASH_MIN_DURATION = 1500
-const FLASH_MAX_DURATION = 2500
-const FLASH_GLOW_OPACITY = 0.3
-const FLASH_CORE_OPACITY = 0.7
-const FLASH_GLOW_SIZE = 2.5
-const FLASH_CORE_SIZE = 1.5
-const FLASH_GLOW_COLOR = '40, 40, 40'
-const FLASH_CORE_COLOR = '20, 20, 20'
+const CONNECTION_LINE_WIDTH = 0.6
+const CONNECTION_COLOR = '100, 100, 100'
 
 // =============================================================================
 // PORTAL NODE CONFIGURATION
@@ -55,15 +44,11 @@ interface Node {
   vy: number
   radius: number
   opacity: number
-  flashTime: number
-  flashDuration: number
 }
 
 interface PortalNode extends Node {
   config: PortalConfig
 }
-
-const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3)
 
 interface Props {
   portals: PortalConfig[]
@@ -142,8 +127,6 @@ export default function HomeBackground({ portals }: Props) {
         vy: (Math.random() - 0.5) * NODE_SPEED,
         radius: NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS),
         opacity: NODE_MIN_OPACITY + Math.random() * (NODE_MAX_OPACITY - NODE_MIN_OPACITY),
-        flashTime: 0,
-        flashDuration: 0,
       })
     }
     nodesRef.current = nodes
@@ -162,8 +145,6 @@ export default function HomeBackground({ portals }: Props) {
         vy: (Math.random() - 0.5) * NODE_SPEED * 0.5,
         radius: config.radius,
         opacity: 0.5,
-        flashTime: 0,
-        flashDuration: 0,
         config,
       }
     })
@@ -222,15 +203,8 @@ export default function HomeBackground({ portals }: Props) {
     }
     canvas.addEventListener('mousemove', handleMouseMove)
 
-    const animate = (currentTime: number) => {
+    const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Randomly trigger flashes on regular nodes
-      if (Math.random() < FLASH_CHANCE) {
-        const randomNode = nodes[Math.floor(Math.random() * nodes.length)]
-        randomNode.flashTime = currentTime
-        randomNode.flashDuration = FLASH_MIN_DURATION + Math.random() * (FLASH_MAX_DURATION - FLASH_MIN_DURATION)
-      }
 
       const allNodes = [...nodes, ...portalNodes]
 
@@ -264,28 +238,10 @@ export default function HomeBackground({ portals }: Props) {
         node.x = Math.max(0, Math.min(canvas.width, node.x))
         node.y = Math.max(0, Math.min(canvas.height, node.y))
 
-        const timeSinceFlash = currentTime - node.flashTime
-        const isFlashing = timeSinceFlash < node.flashDuration
-
-        if (isFlashing) {
-          const flashProgress = timeSinceFlash / node.flashDuration
-          const fadeMultiplier = 1 - easeOutCubic(flashProgress)
-
-          ctx.beginPath()
-          ctx.arc(node.x, node.y, node.radius * FLASH_GLOW_SIZE, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${FLASH_GLOW_COLOR}, ${fadeMultiplier * FLASH_GLOW_OPACITY})`
-          ctx.fill()
-
-          ctx.beginPath()
-          ctx.arc(node.x, node.y, node.radius * FLASH_CORE_SIZE, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${FLASH_CORE_COLOR}, ${fadeMultiplier * FLASH_CORE_OPACITY})`
-          ctx.fill()
-        } else {
-          ctx.beginPath()
-          ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${NODE_COLOR}, ${node.opacity})`
-          ctx.fill()
-        }
+        ctx.beginPath()
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${NODE_COLOR}, ${node.opacity})`
+        ctx.fill()
       }
 
       // Update and draw portal nodes - more subtle, like regular nodes but colored
@@ -328,7 +284,7 @@ export default function HomeBackground({ portals }: Props) {
       animationRef.current = requestAnimationFrame(animate)
     }
 
-    animate(performance.now())
+    animate()
 
     return () => {
       window.removeEventListener('resize', resize)
@@ -365,8 +321,8 @@ export default function HomeBackground({ portals }: Props) {
       )}
 
       {/* Isaac's Ram text in bottom left */}
-      <div className="fixed bottom-6 left-6 z-10 text-lg font-medium text-gray-400">
-        Isaac's Ram
+      <div className="fixed bottom-6 left-6 z-10 text-5xl font-medium text-gray-300">
+        Isaac & The Ram
       </div>
 
       {/* Flying portal node - shoots straight up */}
