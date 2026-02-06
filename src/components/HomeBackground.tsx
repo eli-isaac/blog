@@ -11,7 +11,7 @@ const BACKGROUND_COLOR = '#efefe2'
 
 // Construct boundary
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
-const MAX_CONSTRUCT_RADIUS = 500 // Max radius of the construct circle (px)
+const MAX_CONSTRUCT_RADIUS = 300 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
 
 // Node settings
@@ -39,7 +39,7 @@ const PORTAL_GLOW_RADIUS_MULTIPLIER = 1.5 // Glow ring size relative to portal r
 const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5 // Click/hover detection area multiplier
 
 // Hover highlight settings (for regular nodes and edges near cursor)
-const HOVER_DISTANCE = 80 // How close cursor needs to be to highlight (px)
+const HOVER_DISTANCE = 40 // How close cursor needs to be to highlight (px)
 const HOVER_OPACITY_MULTIPLIER = 3 // Opacity multiplier when hovered
 const HOVER_PERTURB_STRENGTH = 0.7 // How much cursor nudges nearby node velocity (0 = off)
 const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
