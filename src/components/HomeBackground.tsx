@@ -6,22 +6,76 @@ import { motion } from 'framer-motion'
 // CONFIGURATION
 // =============================================================================
 
+// Background
+const BACKGROUND_COLOR = '#efefe2'
+
+// Construct boundary
+const CANVAS_MARGIN = 50 // Inset from screen edge; radius = min(w,h)/2 - margin
+const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
+
 // Node settings
-const NODE_COUNT = 150
-const NODE_MIN_RADIUS = 2
-const NODE_MAX_RADIUS = 6
-const NODE_MIN_OPACITY = 0.15
-const NODE_MAX_OPACITY = 0.35
-const NODE_COLOR = '100, 100, 100'
+const NODE_COUNT = 200
+const NODE_MIN_RADIUS = 4
+const NODE_MAX_RADIUS = 7
+const NODE_OPACITY = 0.7
+const NODE_MIN_SHADE = 140 // Darker grey
+const NODE_MAX_SHADE = 210 // Lighter grey
 
 // Movement settings
 const NODE_SPEED = 0.4
+const NODE_SPEED_MIN_MULTIPLIER = 0.3 // Min random speed factor per node
+const NODE_SPEED_MAX_MULTIPLIER = 2.8 // Max random speed factor per node
+const BOUNCE_ANGLE_SPREAD = Math.PI // ±90° randomness on bounce (Math.PI = ±90°)
+
+// Portal node settings
+const PORTAL_RADIUS = 8 // Default portal node radius
+const PORTAL_SPEED_MULTIPLIER = 0.5 // Portal speed relative to NODE_SPEED
+const PORTAL_OPACITY = 0.65 // Core opacity (non-hovered)
+const PORTAL_HOVER_OPACITY = 1 // Core opacity (hovered)
+const PORTAL_GLOW_OPACITY = 0.12 // Glow opacity (non-hovered)
+const PORTAL_HOVER_GLOW_OPACITY = 0.25 // Glow opacity (hovered)
+const PORTAL_GLOW_RADIUS_MULTIPLIER = 1.5 // Glow ring size relative to portal radius
+const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5 // Click/hover detection area multiplier
 
 // Connection settings
-const CONNECTION_DISTANCE = 140
-const CONNECTION_OPACITY = 0.15
-const CONNECTION_LINE_WIDTH = 0.6
+const CONNECTION_DISTANCE = 340
+const CONNECTION_PROBABILITY = 0.2 // Probability a valid pair is connected (0–1)
+const CONNECTION_OPACITY = 0.13
+const CONNECTION_LINE_WIDTH = .8
 const CONNECTION_COLOR = '100, 100, 100'
+
+// Flying animation settings
+const NAVIGATION_DELAY = 700 // ms before navigating after portal click
+const FLYING_CIRCLE_SIZE = 16 // Diameter of the flying circle (px)
+const FLYING_CIRCLE_SCALE = 2 // How much it scales up while flying
+const COLOR_LINE_HEIGHT = 3 // Height of the top color sweep line (px)
+
+// =============================================================================
+// SPHERE DRAWING
+// =============================================================================
+
+function drawSphereNode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  opacity: number,
+) {
+  const highlightX = x - radius * 0.01
+  const highlightY = y - radius * 0.01
+  const gradient = ctx.createRadialGradient(
+    highlightX, highlightY, radius * 0.05,
+    x, y, radius,
+  )
+  gradient.addColorStop(0, `rgba(${color}, ${Math.min(opacity * 1.15, 1)})`)
+  gradient.addColorStop(0.5, `rgba(${color}, ${opacity})`)
+  gradient.addColorStop(1, `rgba(${color}, ${opacity * 0.15})`)
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.fillStyle = gradient
+  ctx.fill()
+}
 
 // =============================================================================
 // PORTAL NODE CONFIGURATION
@@ -31,7 +85,7 @@ export interface PortalConfig {
   id: string
   path: string
   color: string // RGB string like '220, 60, 60'
-  radius: number // Size of the portal node
+  radius?: number // Size of the portal node (defaults to PORTAL_RADIUS)
   label: string // Label to show on hover
 }
 
@@ -44,6 +98,7 @@ interface Node {
   vy: number
   radius: number
   opacity: number
+  color: string // per-node RGB shade string
 }
 
 interface PortalNode extends Node {
@@ -92,7 +147,7 @@ export default function HomeBackground({ portals }: Props) {
     // Navigate after circle flies off and line sweeps in
     setTimeout(() => {
       navigate(portal.config.path)
-    }, 700)
+    }, NAVIGATION_DELAY)
   }
 
   useEffect(() => {
@@ -110,38 +165,57 @@ export default function HomeBackground({ portals }: Props) {
     resize()
     window.addEventListener('resize', resize)
 
-    // Create regular nodes
+    // Spherical boundary — nodes live inside a circle
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+    const constructRadius = Math.min(canvas.width, canvas.height) / 2 - CANVAS_MARGIN
+
+    // Create regular nodes — spawned bunched near the center, they drift outward naturally
+    const SPAWN_RADIUS = constructRadius * SPAWN_RADIUS_RATIO
     const nodes: Node[] = []
     for (let i = 0; i < NODE_COUNT; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const r = Math.sqrt(Math.random()) * SPAWN_RADIUS
       nodes.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * NODE_SPEED,
-        vy: (Math.random() - 0.5) * NODE_SPEED,
+        x: centerX + Math.cos(angle) * r,
+        y: centerY + Math.sin(angle) * r,
+        vx: (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER)),
+        vy: (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER)),
         radius: NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS),
-        opacity: NODE_MIN_OPACITY + Math.random() * (NODE_MAX_OPACITY - NODE_MIN_OPACITY),
+        opacity: NODE_OPACITY,
+        color: (() => { const s = Math.round(NODE_MIN_SHADE + Math.random() * (NODE_MAX_SHADE - NODE_MIN_SHADE)); return `${s}, ${s}, ${s}` })(),
       })
     }
     nodesRef.current = nodes
 
-    // Create portal nodes - spread them out across the canvas
+    // Create portal nodes - start near center, drift outward with the rest
     const portalNodes: PortalNode[] = portals.map((config, index) => {
       const angle = (index / portals.length) * Math.PI * 2 + Math.PI / 4
-      const distanceFromCenter = Math.min(canvas.width, canvas.height) * 0.25
-      const centerX = canvas.width / 2
-      const centerY = canvas.height / 2
+      const r = Math.random() * SPAWN_RADIUS
       
       return {
-        x: centerX + Math.cos(angle) * distanceFromCenter,
-        y: centerY + Math.sin(angle) * distanceFromCenter,
-        vx: (Math.random() - 0.5) * NODE_SPEED * 0.5,
-        vy: (Math.random() - 0.5) * NODE_SPEED * 0.5,
-        radius: config.radius,
+        x: centerX + Math.cos(angle) * r,
+        y: centerY + Math.sin(angle) * r,
+        vx: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
+        vy: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
+        radius: config.radius ?? PORTAL_RADIUS,
         opacity: 0.5,
+        color: config.color,
         config,
       }
     })
     portalNodesRef.current = portalNodes
+
+    // Precompute which node pairs are eligible for connections
+    const allNodesForPairs = [...nodes, ...portalNodes]
+    const connectionEligible = new Set<string>()
+    for (let i = 0; i < allNodesForPairs.length; i++) {
+      for (let j = i + 1; j < allNodesForPairs.length; j++) {
+        if (Math.random() < CONNECTION_PROBABILITY) {
+          connectionEligible.add(`${i}-${j}`)
+        }
+      }
+    }
 
     // Click handler
     const handleClick = (e: MouseEvent) => {
@@ -154,7 +228,7 @@ export default function HomeBackground({ portals }: Props) {
         const dy = portal.y - y
         const distance = Math.sqrt(dx * dx + dy * dy)
         
-        if (distance < portal.radius * 2.5) {
+        if (distance < portal.radius * PORTAL_HIT_RADIUS_MULTIPLIER) {
           handlePortalClick(portal)
           return
         }
@@ -174,7 +248,7 @@ export default function HomeBackground({ portals }: Props) {
         const dy = portal.y - y
         const distance = Math.sqrt(dx * dx + dy * dy)
         
-        if (distance < portal.radius * 2.5) {
+        if (distance < portal.radius * PORTAL_HIT_RADIUS_MULTIPLIER) {
           foundPortal = portal
           break
         }
@@ -201,9 +275,11 @@ export default function HomeBackground({ portals }: Props) {
 
       const allNodes = [...nodes, ...portalNodes]
 
-      // Draw connections
+      // Draw connections (only for pre-selected eligible pairs)
       for (let i = 0; i < allNodes.length; i++) {
         for (let j = i + 1; j < allNodes.length; j++) {
+          if (!connectionEligible.has(`${i}-${j}`)) continue
+
           const dx = allNodes[i].x - allNodes[j].x
           const dy = allNodes[i].y - allNodes[j].y
           const distance = Math.sqrt(dx * dx + dy * dy)
@@ -225,16 +301,22 @@ export default function HomeBackground({ portals }: Props) {
         node.x += node.vx
         node.y += node.vy
 
-        if (node.x < 0 || node.x > canvas.width) node.vx *= -1
-        if (node.y < 0 || node.y > canvas.height) node.vy *= -1
+        // Bounce off circular boundary — randomize direction, keep speed
+        const ndx = node.x - centerX
+        const ndy = node.y - centerY
+        const nDist = Math.sqrt(ndx * ndx + ndy * ndy)
+        if (nDist > constructRadius) {
+          const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
+          // Pick a random inward-ish angle (biased away from the boundary)
+          const outAngle = Math.atan2(ndy, ndx)
+          const newAngle = outAngle + Math.PI + (Math.random() - 0.5) * BOUNCE_ANGLE_SPREAD
+          node.vx = Math.cos(newAngle) * speed
+          node.vy = Math.sin(newAngle) * speed
+          node.x = centerX + (ndx / nDist) * constructRadius
+          node.y = centerY + (ndy / nDist) * constructRadius
+        }
 
-        node.x = Math.max(0, Math.min(canvas.width, node.x))
-        node.y = Math.max(0, Math.min(canvas.height, node.y))
-
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${NODE_COLOR}, ${node.opacity})`
-        ctx.fill()
+        drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
       }
 
       // Update and draw portal nodes - more subtle, like regular nodes but colored
@@ -247,31 +329,32 @@ export default function HomeBackground({ portals }: Props) {
         portal.x += portal.vx
         portal.y += portal.vy
 
-        const padding = 100
-        if (portal.x < padding || portal.x > canvas.width - padding) portal.vx *= -1
-        if (portal.y < padding || portal.y > canvas.height - padding) portal.vy *= -1
-
-        portal.x = Math.max(padding, Math.min(canvas.width - padding, portal.x))
-        portal.y = Math.max(padding, Math.min(canvas.height - padding, portal.y))
+        // Bounce off circular boundary — randomize direction, keep speed
+        const pdx = portal.x - centerX
+        const pdy = portal.y - centerY
+        const pDist = Math.sqrt(pdx * pdx + pdy * pdy)
+        if (pDist > constructRadius) {
+          const speed = Math.sqrt(portal.vx * portal.vx + portal.vy * portal.vy)
+          const outAngle = Math.atan2(pdy, pdx)
+          const newAngle = outAngle + Math.PI + (Math.random() - 0.5) * BOUNCE_ANGLE_SPREAD
+          portal.vx = Math.cos(newAngle) * speed
+          portal.vy = Math.sin(newAngle) * speed
+          portal.x = centerX + (pdx / pDist) * constructRadius
+          portal.y = centerY + (pdy / pDist) * constructRadius
+        }
 
         const color = portal.config.color
         
         // Check if this portal is hovered (using ref for hover state)
         const isHovered = hoveredPortalIdRef.current === portal.config.id
-        const coreOpacity = isHovered ? 1 : 0.65
-        const glowOpacity = isHovered ? 0.25 : 0.12
+        const coreOpacity = isHovered ? PORTAL_HOVER_OPACITY : PORTAL_OPACITY
+        const glowOpacity = isHovered ? PORTAL_HOVER_GLOW_OPACITY : PORTAL_GLOW_OPACITY
 
-        // Subtle outer glow
-        ctx.beginPath()
-        ctx.arc(portal.x, portal.y, portal.radius * 1.5, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${color}, ${glowOpacity})`
-        ctx.fill()
+        // Outer glow sphere
+        drawSphereNode(ctx, portal.x, portal.y, portal.radius * PORTAL_GLOW_RADIUS_MULTIPLIER, color, glowOpacity)
 
-        // Core
-        ctx.beginPath()
-        ctx.arc(portal.x, portal.y, portal.radius, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${color}, ${coreOpacity})`
-        ctx.fill()
+        // Core sphere
+        drawSphereNode(ctx, portal.x, portal.y, portal.radius, color, coreOpacity)
       }
 
       animationRef.current = requestAnimationFrame(animate)
@@ -292,7 +375,7 @@ export default function HomeBackground({ portals }: Props) {
       <div
         ref={containerRef}
         className="fixed inset-0"
-        style={{ backgroundColor: '#efefe2' }}
+        style={{ backgroundColor: BACKGROUND_COLOR }}
       >
         <canvas
           ref={canvasRef}
@@ -325,8 +408,8 @@ export default function HomeBackground({ portals }: Props) {
           className="fixed z-50 rounded-full"
           style={{
             backgroundColor: `rgb(${flyingPortal.config.color})`,
-            width: 16,
-            height: 16,
+            width: FLYING_CIRCLE_SIZE,
+            height: FLYING_CIRCLE_SIZE,
           }}
           initial={{
             left: flyingPortal.x,
@@ -341,7 +424,7 @@ export default function HomeBackground({ portals }: Props) {
             top: -50,
             x: '-50%',
             y: '-50%',
-            scale: 2,
+            scale: FLYING_CIRCLE_SCALE,
             opacity: 1,
           }}
           transition={{
@@ -356,11 +439,11 @@ export default function HomeBackground({ portals }: Props) {
         <motion.div
           className="fixed top-0 left-0 right-0 z-50"
           style={{
-            height: 3,
+            height: COLOR_LINE_HEIGHT,
             backgroundColor: `rgb(${flyingPortal.config.color})`,
             transformOrigin: `${flyingPortal.x}px center`,
           }}
-          initial={{ scaleX: 48 / window.innerWidth, opacity: 0 }}
+          initial={{ scaleX: (FLYING_CIRCLE_SIZE * 3) / window.innerWidth, opacity: 0 }}
           animate={{ scaleX: 1, opacity: 1 }}
           transition={{
             scaleX: {
