@@ -10,11 +10,12 @@ import { motion } from 'framer-motion'
 const BACKGROUND_COLOR = '#efefe2'
 
 // Construct boundary
-const CANVAS_MARGIN = 50 // Inset from screen edge; radius = min(w,h)/2 - margin
+const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
+const MAX_CONSTRUCT_RADIUS = 500 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
 
 // Node settings
-const NODE_COUNT = 200
+const NODE_COUNT = 250
 const NODE_MIN_RADIUS = 4
 const NODE_MAX_RADIUS = 7
 const NODE_OPACITY = 0.7
@@ -36,6 +37,12 @@ const PORTAL_GLOW_OPACITY = 0.12 // Glow opacity (non-hovered)
 const PORTAL_HOVER_GLOW_OPACITY = 0.25 // Glow opacity (hovered)
 const PORTAL_GLOW_RADIUS_MULTIPLIER = 1.5 // Glow ring size relative to portal radius
 const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5 // Click/hover detection area multiplier
+
+// Hover highlight settings (for regular nodes and edges near cursor)
+const HOVER_DISTANCE = 80 // How close cursor needs to be to highlight (px)
+const HOVER_OPACITY_MULTIPLIER = 3 // Opacity multiplier when hovered
+const HOVER_PERTURB_STRENGTH = 0.7 // How much cursor nudges nearby node velocity (0 = off)
+const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
 
 // Connection settings
 const CONNECTION_DISTANCE = 340
@@ -96,6 +103,7 @@ interface Node {
   y: number
   vx: number
   vy: number
+  baseSpeed: number // original speed magnitude to recover toward
   radius: number
   opacity: number
   color: string // per-node RGB shade string
@@ -127,6 +135,8 @@ export default function HomeBackground({ portals }: Props) {
   const flyingPortalIdRef = useRef<string | null>(null)
   // Ref to track hovered portal ID for canvas drawing
   const hoveredPortalIdRef = useRef<string | null>(null)
+  // Mouse position ref for hover highlighting in animation loop
+  const mouseRef = useRef<{ x: number; y: number } | null>(null)
 
   const [hoveredPortal, setHoveredPortal] = useState<{
     label: string
@@ -168,7 +178,10 @@ export default function HomeBackground({ portals }: Props) {
     // Spherical boundary — nodes live inside a circle
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
-    const constructRadius = Math.min(canvas.width, canvas.height) / 2 - CANVAS_MARGIN
+    const constructRadius = Math.min(
+      Math.min(canvas.width, canvas.height) / 2 - CANVAS_MARGIN,
+      MAX_CONSTRUCT_RADIUS,
+    )
 
     // Create regular nodes — spawned bunched near the center, they drift outward naturally
     const SPAWN_RADIUS = constructRadius * SPAWN_RADIUS_RATIO
@@ -176,14 +189,18 @@ export default function HomeBackground({ portals }: Props) {
     for (let i = 0; i < NODE_COUNT; i++) {
       const angle = Math.random() * Math.PI * 2
       const r = Math.sqrt(Math.random()) * SPAWN_RADIUS
+      const vx = (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER))
+      const vy = (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER))
+      const s = Math.round(NODE_MIN_SHADE + Math.random() * (NODE_MAX_SHADE - NODE_MIN_SHADE))
       nodes.push({
         x: centerX + Math.cos(angle) * r,
         y: centerY + Math.sin(angle) * r,
-        vx: (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER)),
-        vy: (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER)),
+        vx,
+        vy,
+        baseSpeed: Math.sqrt(vx * vx + vy * vy),
         radius: NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS),
         opacity: NODE_OPACITY,
-        color: (() => { const s = Math.round(NODE_MIN_SHADE + Math.random() * (NODE_MAX_SHADE - NODE_MIN_SHADE)); return `${s}, ${s}, ${s}` })(),
+        color: `${s}, ${s}, ${s}`,
       })
     }
     nodesRef.current = nodes
@@ -193,11 +210,14 @@ export default function HomeBackground({ portals }: Props) {
       const angle = (index / portals.length) * Math.PI * 2 + Math.PI / 4
       const r = Math.random() * SPAWN_RADIUS
       
+      const pvx = (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER
+      const pvy = (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER
       return {
         x: centerX + Math.cos(angle) * r,
         y: centerY + Math.sin(angle) * r,
-        vx: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
-        vy: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
+        vx: pvx,
+        vy: pvy,
+        baseSpeed: Math.sqrt(pvx * pvx + pvy * pvy),
         radius: config.radius ?? PORTAL_RADIUS,
         opacity: 0.5,
         color: config.color,
@@ -242,6 +262,8 @@ export default function HomeBackground({ portals }: Props) {
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
 
+      mouseRef.current = { x, y }
+
       let foundPortal: PortalNode | null = null
       for (const portal of portalNodes) {
         const dx = portal.x - x
@@ -270,10 +292,26 @@ export default function HomeBackground({ portals }: Props) {
     }
     canvas.addEventListener('mousemove', handleMouseMove)
 
+    const handleMouseLeave = () => {
+      mouseRef.current = null
+    }
+    canvas.addEventListener('mouseleave', handleMouseLeave)
+
+    // Point-to-line-segment distance for edge hover detection
+    const pointToSegmentDist = (px: number, py: number, ax: number, ay: number, bx: number, by: number) => {
+      const abx = bx - ax, aby = by - ay
+      const apx = px - ax, apy = py - ay
+      const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / (abx * abx + aby * aby)))
+      const cx = ax + t * abx, cy = ay + t * aby
+      const dx = px - cx, dy = py - cy
+      return Math.sqrt(dx * dx + dy * dy)
+    }
+
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       const allNodes = [...nodes, ...portalNodes]
+      const mouse = mouseRef.current
 
       // Draw connections (only for pre-selected eligible pairs)
       for (let i = 0; i < allNodes.length; i++) {
@@ -285,7 +323,17 @@ export default function HomeBackground({ portals }: Props) {
           const distance = Math.sqrt(dx * dx + dy * dy)
 
           if (distance < CONNECTION_DISTANCE) {
-            const opacity = (1 - distance / CONNECTION_DISTANCE) * CONNECTION_OPACITY
+            let opacity = (1 - distance / CONNECTION_DISTANCE) * CONNECTION_OPACITY
+
+            // Boost opacity if cursor is near this edge
+            if (mouse) {
+              const dist = pointToSegmentDist(mouse.x, mouse.y, allNodes[i].x, allNodes[i].y, allNodes[j].x, allNodes[j].y)
+              if (dist < HOVER_DISTANCE) {
+                const proximity = 1 - dist / HOVER_DISTANCE
+                opacity *= 1 + proximity * (HOVER_OPACITY_MULTIPLIER - 1)
+              }
+            }
+
             ctx.beginPath()
             ctx.moveTo(allNodes[i].x, allNodes[i].y)
             ctx.lineTo(allNodes[j].x, allNodes[j].y)
@@ -316,7 +364,34 @@ export default function HomeBackground({ portals }: Props) {
           node.y = centerY + (ndy / nDist) * constructRadius
         }
 
-        drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
+        // Boost opacity and perturb velocity if cursor is near this node
+        let opacity = node.opacity
+        if (mouse) {
+          const dx = mouse.x - node.x
+          const dy = mouse.y - node.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < HOVER_DISTANCE) {
+            const proximity = 1 - dist / HOVER_DISTANCE
+            opacity *= 1 + proximity * (HOVER_OPACITY_MULTIPLIER - 1)
+
+            // Nudge velocity with a random perturbation scaled by proximity
+            const perturbAngle = Math.random() * Math.PI * 2
+            const perturbMag = proximity * HOVER_PERTURB_STRENGTH
+            node.vx += Math.cos(perturbAngle) * perturbMag * NODE_SPEED
+            node.vy += Math.sin(perturbAngle) * perturbMag * NODE_SPEED
+          }
+        }
+
+        // Gently recover speed toward original baseSpeed
+        const currentSpeed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
+        if (currentSpeed > 0) {
+          const recoveredSpeed = currentSpeed + (node.baseSpeed - currentSpeed) * SPEED_RECOVERY_RATE
+          const scale = recoveredSpeed / currentSpeed
+          node.vx *= scale
+          node.vy *= scale
+        }
+
+        drawSphereNode(ctx, node.x, node.y, node.radius, node.color, opacity)
       }
 
       // Update and draw portal nodes - more subtle, like regular nodes but colored
@@ -366,6 +441,7 @@ export default function HomeBackground({ portals }: Props) {
       window.removeEventListener('resize', resize)
       canvas.removeEventListener('click', handleClick)
       canvas.removeEventListener('mousemove', handleMouseMove)
+      canvas.removeEventListener('mouseleave', handleMouseLeave)
       cancelAnimationFrame(animationRef.current)
     }
   }, [portals, navigate])
