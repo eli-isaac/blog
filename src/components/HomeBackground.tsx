@@ -79,8 +79,6 @@ export default function HomeBackground({ portals }: Props) {
     y: number
   } | null>(null)
   
-  const [topFlash, setTopFlash] = useState<string | null>(null) // color of the flash
-
   // Handle portal click
   const handlePortalClick = (portal: PortalNode) => {
     setHoveredPortal(null)
@@ -91,15 +89,10 @@ export default function HomeBackground({ portals }: Props) {
       y: portal.y,
     })
     
-    // Flash the top when node reaches it
-    setTimeout(() => {
-      setTopFlash(portal.config.color)
-    }, 400)
-    
-    // Navigate when animation completes (node reaches top)
+    // Navigate after circle flies off and line sweeps in
     setTimeout(() => {
       navigate(portal.config.path)
-    }, 550)
+    }, 700)
   }
 
   useEffect(() => {
@@ -298,7 +291,8 @@ export default function HomeBackground({ portals }: Props) {
     <>
       <div
         ref={containerRef}
-        className="fixed inset-0 bg-gradient-to-br from-slate-50 to-slate-100"
+        className="fixed inset-0"
+        style={{ backgroundColor: '#efefe2' }}
       >
         <canvas
           ref={canvasRef}
@@ -321,11 +315,11 @@ export default function HomeBackground({ portals }: Props) {
       )}
 
       {/* Isaac's Ram text in bottom left */}
-      <div className="fixed bottom-6 left-6 z-10 text-5xl font-medium text-gray-300">
-        Isaac & The Ram
+      <div className="fixed bottom-6 left-6 z-10 text-5xl font-medium" style={{ color: '#c9c9b8' }}>
+        Isaacs Ram
       </div>
 
-      {/* Flying portal node - shoots straight up */}
+      {/* Flying circle - expands 3x as it flies off the top of the screen */}
       {flyingPortal && (
         <motion.div
           className="fixed z-50 rounded-full"
@@ -334,7 +328,7 @@ export default function HomeBackground({ portals }: Props) {
             width: 16,
             height: 16,
           }}
-          initial={{ 
+          initial={{
             left: flyingPortal.x,
             top: flyingPortal.y,
             x: '-50%',
@@ -342,32 +336,43 @@ export default function HomeBackground({ portals }: Props) {
             scale: 1,
             opacity: 1,
           }}
-          animate={{ 
+          animate={{
             left: flyingPortal.x,
-            top: -20,
+            top: -50,
             x: '-50%',
-            y: 0,
-            scale: 1.5,
+            y: '-50%',
+            scale: 2,
             opacity: 1,
           }}
-          transition={{ 
+          transition={{
             duration: 0.5,
-            ease: [0.4, 0, 0.2, 1],
+            ease: [0.25, 0, 0.2, 1],
           }}
         />
       )}
 
-      {/* Top flash when node hits the top */}
-      {topFlash && (
+      {/* Color line expands from where the circle hit the top */}
+      {flyingPortal && (
         <motion.div
-          className="fixed top-0 left-0 right-0 z-40"
+          className="fixed top-0 left-0 right-0 z-50"
           style={{
-            height: 4,
-            backgroundColor: `rgb(${topFlash})`,
+            height: 3,
+            backgroundColor: `rgb(${flyingPortal.config.color})`,
+            transformOrigin: `${flyingPortal.x}px center`,
           }}
-          initial={{ opacity: 0, scaleY: 0 }}
-          animate={{ opacity: 1, scaleY: 1 }}
-          transition={{ duration: 0.1 }}
+          initial={{ scaleX: 48 / window.innerWidth, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{
+            scaleX: {
+              delay: 0.28,
+              duration: 0.6,
+              ease: [0.4, 0, 0.2, 1],
+            },
+            opacity: {
+              delay: 0.28,
+              duration: 0,
+            },
+          }}
         />
       )}
     </>

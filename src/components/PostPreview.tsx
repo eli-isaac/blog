@@ -7,7 +7,7 @@ import ArticleBody from './ArticleBody'
 import { mdxComponents } from './MDXPost'
 import type { PostMeta } from '../content/posts'
 
-const previewBg = 'rgb(245,245,245)'
+const previewBg = '#e5e5d3'
 const hoverTransition = {
   type: 'tween' as const,
   duration: 0.35,
@@ -91,7 +91,7 @@ export function PostPreviewModal({ meta, Content, onClose, onOpenArticle }: Post
         transition={{ type: 'tween', duration: 0.18, ease: 'easeOut', backgroundColor: { duration: 0.18, ease: 'easeOut' } }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-4 border-b border-gray-100 px-12 py-10">
+        <div className="flex items-start gap-4 border-b border-stone-300/40 px-12 py-10">
           <PostHeader
             title={meta.title}
             subtitle={meta.subtitle}

@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useSidebar } from '../context/SidebarContext'
 import PostsBackground, { SIDEBAR_THEMES } from './PostsBackground'
 
@@ -6,17 +6,17 @@ import PostsBackground, { SIDEBAR_THEMES } from './PostsBackground'
 const SIDEBAR_CONFIG = {
   posts: {
     bgClass: 'border-stone-200/60',
-    bgStyle: { background: 'linear-gradient(to bottom, rgb(253, 245, 243), rgb(250, 238, 234))' }, // Muted warm rose
+    bgStyle: { background: '#efefe2' },
     theme: SIDEBAR_THEMES.posts,
   },
   projects: {
     bgClass: 'border-stone-200/60',
-    bgStyle: { background: 'linear-gradient(to bottom, rgb(245, 250, 247), rgb(235, 245, 240))' }, // Muted sage green
+    bgStyle: { background: '#efefe2' },
     theme: SIDEBAR_THEMES.projects,
   },
   default: {
-    bgClass: 'border-slate-200/60',
-    bgStyle: { background: 'linear-gradient(to bottom, rgb(248, 250, 252), rgb(241, 245, 249))' },
+    bgClass: 'border-stone-200/60',
+    bgStyle: { background: '#efefe2' },
     theme: SIDEBAR_THEMES.posts,
   },
 } as const
@@ -35,7 +35,7 @@ export default function Layout() {
   const showBackground = location.pathname.startsWith('/posts') || location.pathname.startsWith('/projects')
 
   return (
-    <div className="relative min-h-screen md:flex">
+    <div className="relative min-h-screen md:flex" style={{ backgroundColor: '#efefe2' }}>
       {/* Mobile toggle button */}
       <button 
         onClick={toggle}
@@ -59,7 +59,7 @@ export default function Layout() {
       <aside
         className={`
           fixed md:sticky top-0 left-0 h-screen z-40
-          ${sidebarConfig.bgClass} border-l border-r w-64 p-6 overflow-hidden
+          ${sidebarConfig.bgClass} border-l border-r border-stone-300/60 w-64 p-6 overflow-hidden
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
@@ -70,9 +70,9 @@ export default function Layout() {
         {showBackground && <PostsBackground theme={sidebarConfig.theme} />}
         
         {/* Isaac's Ram text at bottom */}
-        <div className="absolute bottom-6 left-6 z-10 text-3xl font-medium text-gray-300">
+        <Link to="/" className="absolute bottom-6 left-6 z-10 text-3xl font-medium no-underline hover:opacity-80 transition-opacity" style={{ color: '#c9c9b8' }}>
           Isaac's Ram
-        </div>
+        </Link>
       </aside>
 
       {/* Main content */}

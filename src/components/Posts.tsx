@@ -7,6 +7,7 @@ import { PostPreview, PostPreviewModal } from './PostPreview'
 
 export default function Posts() {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const activePost = posts.find((post) => post.meta.slug === activeSlug) || null
@@ -20,18 +21,32 @@ export default function Posts() {
     <LayoutGroup>
       <div className="pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
         <ul>
-          {posts.map((post, index) => (
-            <li key={post.meta.slug}>
-              <PostPreview
-                meta={post.meta}
-                onExpand={() => setActiveSlug(post.meta.slug)}
-                onNavigate={() => navigate(`/posts/${post.meta.slug}`)}
-              />
-              {index < posts.length - 1 && (
-                <div className="mx-8 border-b border-gray-200/60" />
-              )}
-            </li>
-          ))}
+          {posts.map((post, index) => {
+            // Hide divider if the post above or below is hovered
+            const isAdjacentToHover =
+              hoveredSlug === post.meta.slug ||
+              (index < posts.length - 1 && hoveredSlug === posts[index + 1].meta.slug)
+
+            return (
+              <li
+                key={post.meta.slug}
+                onMouseEnter={() => setHoveredSlug(post.meta.slug)}
+                onMouseLeave={() => setHoveredSlug(null)}
+              >
+                <PostPreview
+                  meta={post.meta}
+                  onExpand={() => setActiveSlug(post.meta.slug)}
+                  onNavigate={() => navigate(`/posts/${post.meta.slug}`)}
+                />
+                {index < posts.length - 1 && (
+                  <div
+                    className="mx-8 border-b border-stone-300/50 transition-opacity duration-200"
+                    style={{ opacity: isAdjacentToHover ? 0 : 1 }}
+                  />
+                )}
+              </li>
+            )
+          })}
         </ul>
       </div>
 
