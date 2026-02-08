@@ -8,13 +8,6 @@ import { mdxComponents } from './MDXPost'
 import type { PostMeta } from '../content/posts'
 
 const previewBg = '#e5e5d3'
-const hoverTransition = {
-  type: 'tween' as const,
-  duration: 0.35,
-  ease: 'easeOut' as const,
-  backgroundColor: { duration: 0.35, ease: 'easeOut' as const },
-}
-
 interface PostPreviewProps {
   meta: PostMeta
   onExpand: () => void
@@ -34,12 +27,9 @@ export function PostPreview({ meta, onExpand, onNavigate }: PostPreviewProps) {
       layoutId={`post-shell-${meta.slug}`}
       className="group relative overflow-hidden rounded-3xl bg-transparent px-8 py-6 cursor-pointer shadow-none"
       initial={false}
-      animate={{ backgroundColor: 'transparent', boxShadow: 'none' }}
-      whileHover={{ backgroundColor: previewBg, boxShadow: 'none' }}
-      transition={hoverTransition}
       onClick={onNavigate}
     >
-      <div className="flex items-start gap-3">
+      <div className="relative z-10 flex items-start gap-3">
         <PostHeader
           title={meta.title}
           subtitle={meta.subtitle}
