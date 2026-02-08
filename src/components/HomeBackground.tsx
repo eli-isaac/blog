@@ -15,7 +15,9 @@ const MAX_CONSTRUCT_RADIUS = 300 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
 
 // Node settings
-const NODE_COUNT = 250
+const NODE_COUNT_MOBILE = 200
+const NODE_COUNT_DESKTOP = 400
+const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
 const NODE_MIN_RADIUS = 4
 const NODE_MAX_RADIUS = 7
 const NODE_OPACITY = 0.7
@@ -23,7 +25,7 @@ const NODE_MIN_SHADE = 140 // Darker grey
 const NODE_MAX_SHADE = 210 // Lighter grey
 
 // Movement settings
-const NODE_SPEED = 0.4
+const NODE_SPEED = 0.6
 const NODE_SPEED_MIN_MULTIPLIER = 0.3 // Min random speed factor per node
 const NODE_SPEED_MAX_MULTIPLIER = 2.8 // Max random speed factor per node
 const BOUNCE_ANGLE_SPREAD = Math.PI // ±90° randomness on bounce (Math.PI = ±90°)
