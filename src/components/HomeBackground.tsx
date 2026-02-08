@@ -46,8 +46,8 @@ const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5 // Click/hover detection area multiplie
 
 // Hover highlight settings (for regular nodes and edges near cursor)
 const HOVER_DISTANCE = 40 // How close cursor needs to be to highlight (px)
-const HOVER_OPACITY_MULTIPLIER = 3 // Opacity multiplier when hovered
-const HOVER_PERTURB_STRENGTH = 0.7 // How much cursor nudges nearby node velocity (0 = off)
+const HOVER_OPACITY_MULTIPLIER = 1 // Opacity multiplier when hovered
+const HOVER_REPEL_STRENGTH = 0.25 // How strongly cursor repels nearby nodes (0 = off)
 const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
 
 // Connection settings
@@ -391,21 +391,22 @@ export default function HomeBackground({ portals }: Props) {
         if (node.y < 0) { node.y = 0; node.vy = Math.abs(node.vy) }
         else if (node.y > canvas.height) { node.y = canvas.height; node.vy = -Math.abs(node.vy) }
 
-        // Boost opacity and perturb velocity if cursor is near this node
+        // Boost opacity and repel from cursor if near this node
         let opacity = node.opacity
         if (mouse) {
-          const dx = mouse.x - node.x
-          const dy = mouse.y - node.y
+          const dx = node.x - mouse.x
+          const dy = node.y - mouse.y
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < HOVER_DISTANCE) {
             const proximity = 1 - dist / HOVER_DISTANCE
             opacity *= 1 + proximity * (HOVER_OPACITY_MULTIPLIER - 1)
 
-            // Nudge velocity with a random perturbation scaled by proximity
-            const perturbAngle = Math.random() * Math.PI * 2
-            const perturbMag = proximity * HOVER_PERTURB_STRENGTH
-            node.vx += Math.cos(perturbAngle) * perturbMag * NODE_SPEED
-            node.vy += Math.sin(perturbAngle) * perturbMag * NODE_SPEED
+            // Push node away from cursor
+            if (dist > 0) {
+              const repelMag = proximity * HOVER_REPEL_STRENGTH
+              node.vx += (dx / dist) * repelMag
+              node.vy += (dy / dist) * repelMag
+            }
           }
         }
 
