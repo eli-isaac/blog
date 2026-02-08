@@ -13,9 +13,11 @@ const BACKGROUND_COLOR = '#efefe2'
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
 const MAX_CONSTRUCT_RADIUS = 300 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
+const EXPANSION_PAUSE = 22 // Seconds after page load before second expansion starts
+const EXPANSION_DURATION = 3 // Seconds for the sphere to expand to fill the screen
 
 // Node settings
-const NODE_COUNT_MOBILE = 200
+const NODE_COUNT_MOBILE = 170
 const NODE_COUNT_DESKTOP = 400
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
 const NODE_MIN_RADIUS = 4
@@ -25,7 +27,9 @@ const NODE_MIN_SHADE = 140 // Darker grey
 const NODE_MAX_SHADE = 210 // Lighter grey
 
 // Movement settings
-const NODE_SPEED = 0.6
+const NODE_SPEED_MOBILE = 0.45
+const NODE_SPEED_DESKTOP = 0.6
+const NODE_SPEED = window.innerWidth < 768 ? NODE_SPEED_MOBILE : NODE_SPEED_DESKTOP
 const NODE_SPEED_MIN_MULTIPLIER = 0.3 // Min random speed factor per node
 const NODE_SPEED_MAX_MULTIPLIER = 2.8 // Max random speed factor per node
 const BOUNCE_ANGLE_SPREAD = Math.PI // ±90° randomness on bounce (Math.PI = ±90°)
@@ -180,13 +184,16 @@ export default function HomeBackground({ portals }: Props) {
     // Spherical boundary — nodes live inside a circle
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
-    const constructRadius = Math.min(
+    const sphereRadius = Math.min(
       Math.min(canvas.width, canvas.height) / 2 - CANVAS_MARGIN,
       MAX_CONSTRUCT_RADIUS,
     )
+    // Full-screen radius: distance from center to the farthest corner
+    const fullScreenRadius = Math.sqrt(centerX * centerX + centerY * centerY)
+    const startTime = performance.now()
 
     // Create regular nodes — spawned bunched near the center, they drift outward naturally
-    const SPAWN_RADIUS = constructRadius * SPAWN_RADIUS_RATIO
+    const SPAWN_RADIUS = sphereRadius * SPAWN_RADIUS_RATIO
     const nodes: Node[] = []
     for (let i = 0; i < NODE_COUNT; i++) {
       const angle = Math.random() * Math.PI * 2
@@ -312,6 +319,18 @@ export default function HomeBackground({ portals }: Props) {
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+      // Compute current construct radius based on elapsed time
+      const elapsed = (performance.now() - startTime) / 1000
+      let constructRadius: number
+      if (elapsed < EXPANSION_PAUSE) {
+        constructRadius = sphereRadius
+      } else {
+        const t = Math.min((elapsed - EXPANSION_PAUSE) / EXPANSION_DURATION, 1)
+        // Smooth ease-out curve
+        const eased = 1 - (1 - t) * (1 - t)
+        constructRadius = sphereRadius + (fullScreenRadius - sphereRadius) * eased
+      }
+
       const allNodes = [...nodes, ...portalNodes]
       const mouse = mouseRef.current
 
@@ -366,6 +385,12 @@ export default function HomeBackground({ portals }: Props) {
           node.y = centerY + (ndy / nDist) * constructRadius
         }
 
+        // Clamp to screen edges
+        if (node.x < 0) { node.x = 0; node.vx = Math.abs(node.vx) }
+        else if (node.x > canvas.width) { node.x = canvas.width; node.vx = -Math.abs(node.vx) }
+        if (node.y < 0) { node.y = 0; node.vy = Math.abs(node.vy) }
+        else if (node.y > canvas.height) { node.y = canvas.height; node.vy = -Math.abs(node.vy) }
+
         // Boost opacity and perturb velocity if cursor is near this node
         let opacity = node.opacity
         if (mouse) {
@@ -419,6 +444,12 @@ export default function HomeBackground({ portals }: Props) {
           portal.x = centerX + (pdx / pDist) * constructRadius
           portal.y = centerY + (pdy / pDist) * constructRadius
         }
+
+        // Clamp to screen edges
+        if (portal.x < 0) { portal.x = 0; portal.vx = Math.abs(portal.vx) }
+        else if (portal.x > canvas.width) { portal.x = canvas.width; portal.vx = -Math.abs(portal.vx) }
+        if (portal.y < 0) { portal.y = 0; portal.vy = Math.abs(portal.vy) }
+        else if (portal.y > canvas.height) { portal.y = canvas.height; portal.vy = -Math.abs(portal.vy) }
 
         const color = portal.config.color
         
