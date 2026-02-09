@@ -1,14 +1,12 @@
-import { ComponentType, useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
-import type { MDXComponents } from 'mdx/types'
+import { AnimatePresence, motion } from 'framer-motion'
 import { posts } from '../content/posts'
-import { PostPreview, PostPreviewModal } from './PostPreview'
+import { PostPreview } from './PostPreview'
 
 const previewBg = '#e5e5d3'
 
 export default function Posts() {
-  const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -37,16 +35,8 @@ export default function Posts() {
 
   const highlight = getHighlightStyle()
 
-  const activePost = posts.find((post) => post.meta.slug === activeSlug) || null
-
-  const handleOpenArticle = (slug: string) => {
-    // Allow Framer to measure the shared element before navigating
-    requestAnimationFrame(() => navigate(`/posts/${slug}`))
-  }
-
   return (
-    <LayoutGroup>
-      <div className="pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
+    <div className="pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
         <ul ref={listRef} className="relative">
           {/* Single sliding highlight background */}
           <AnimatePresence>
@@ -83,7 +73,6 @@ export default function Posts() {
               >
                 <PostPreview
                   meta={post.meta}
-                  onExpand={() => setActiveSlug(post.meta.slug)}
                   onNavigate={() => navigate(`/posts/${post.meta.slug}`)}
                 />
                 {index < posts.length - 1 && (
@@ -96,19 +85,6 @@ export default function Posts() {
             )
           })}
         </ul>
-      </div>
-
-      <AnimatePresence>
-        {activePost && (
-          <PostPreviewModal
-            key={activePost.meta.slug}
-            meta={activePost.meta}
-            Content={activePost.Content as unknown as ComponentType<{ components?: MDXComponents }>}
-            onClose={() => setActiveSlug(null)}
-            onOpenArticle={() => handleOpenArticle(activePost.meta.slug)}
-          />
-        )}
-      </AnimatePresence>
-    </LayoutGroup>
+    </div>
   )
 }
