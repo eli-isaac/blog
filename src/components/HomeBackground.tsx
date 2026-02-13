@@ -24,17 +24,21 @@ const FORMATION_WANDER_STRENGTH = 1 // Random velocity impulse during formation 
 const TEXT_START = SPHERE_DURATION + EXPANSION_DURATION + SCATTER_DURATION
 const CONDENSE_DURATION = 1.2 // Seconds for nodes to scrunch back to center on reset
 const TEXT_WOBBLE_SPEED = 5 // Speed of gentle wobble after text forms
-const TEXT_WOBBLE_RADIUS = 1.5 // Max wobble distance from target (px)
+const TEXT_WOBBLE_RADIUS = 0.6 // Max wobble distance from target (px)
 const TEXT_TO_RENDER = 'ARROWSMITH'
-const TEXT_WIDTH_RATIO = 0.65 // Text width as fraction of canvas width
+const TEXT_WIDTH_RATIO = 0.92 // Text width as fraction of canvas width
 const TEXT_MAX_FONT_SIZE = 400 // Cap on computed font size (px)
 
 // Node settings
-const NODE_COUNT_MOBILE = 250
+const NODE_COUNT_MOBILE = 450
 const NODE_COUNT_DESKTOP = 800
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
-const NODE_MIN_RADIUS = 4
-const NODE_MAX_RADIUS = 7
+const NODE_MIN_RADIUS_MOBILE = 2
+const NODE_MAX_RADIUS_MOBILE = 3
+const NODE_MIN_RADIUS_DESKTOP = 4
+const NODE_MAX_RADIUS_DESKTOP = 7
+const NODE_MIN_RADIUS = window.innerWidth < 768 ? NODE_MIN_RADIUS_MOBILE : NODE_MIN_RADIUS_DESKTOP
+const NODE_MAX_RADIUS = window.innerWidth < 768 ? NODE_MAX_RADIUS_MOBILE : NODE_MAX_RADIUS_DESKTOP
 const NODE_OPACITY = 0.7
 const NODE_MIN_SHADE = 140 // Darker grey
 const NODE_MAX_SHADE = 210 // Lighter grey
