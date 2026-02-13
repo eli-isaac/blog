@@ -11,7 +11,7 @@ const BACKGROUND_COLOR = '#efefe2'
 
 // Construct boundary
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
-const MAX_CONSTRUCT_RADIUS = 270 // Max radius of the construct circle (px)
+const MAX_CONSTRUCT_RADIUS = 250 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.05 // Fraction of construct radius nodes start in
 const SPHERE_DURATION = 14 // Seconds nodes bounce inside the sphere
 const EXPANSION_DURATION = 5 // Seconds for sphere boundary to expand to full screen
@@ -27,13 +27,13 @@ const TEXT_WOBBLE_SPEED = 5 // Speed of gentle wobble after text forms
 const TEXT_WOBBLE_RADIUS = 0.6 // Max wobble distance from target (px)
 const TEXT_TO_RENDER = 'ARROWSMITH'
 const TEXT_WIDTH_RATIO_MOBILE = 0.92 // Text width as fraction of canvas width on mobile
-const TEXT_WIDTH_RATIO_DESKTOP = 0.4 // Text width as fraction of canvas width on desktop
+const TEXT_WIDTH_RATIO_DESKTOP = 0.35 // Text width as fraction of canvas width on desktop
 const TEXT_MAX_FONT_SIZE = 400 // Cap on computed font size (px)
 const TEXT_FONT_WEIGHT = 400 // Lighter weight for thinner letter strokes
 
 // Node settings
 const NODE_COUNT_MOBILE = 450
-const NODE_COUNT_DESKTOP = 500
+const NODE_COUNT_DESKTOP = 450
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
 const NODE_MIN_RADIUS_MOBILE = 2
 const NODE_MAX_RADIUS_MOBILE = 3
@@ -69,7 +69,7 @@ const HOVER_OPACITY_REDUCTION = 0.5 // How much opacity drops near cursor (0 = n
 const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
 
 // Connection settings
-const CONNECTION_DISTANCE = 300
+const CONNECTION_DISTANCE = 250
 const CONNECTION_PROBABILITY = 0.08 // Probability a valid pair is connected (0–1)
 const CONNECTION_OPACITY = 0.13
 const CONNECTION_LINE_WIDTH = .8
