@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 
 interface SidebarContextType {
   isOpen: boolean
@@ -15,6 +16,13 @@ interface SidebarProviderProps {
 
 export function SidebarProvider({ children }: SidebarProviderProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const location = useLocation()
+
+  // Close sidebar when navigating to a new page (fixes mobile bug where sidebar
+  // state persisted when going Home -> back to Blog)
+  useEffect(() => {
+    setIsOpen(false)
+  }, [location.pathname])
 
   const toggle = () => setIsOpen(prev => !prev)
   const open = () => setIsOpen(true)
