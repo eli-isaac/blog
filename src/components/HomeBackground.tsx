@@ -507,9 +507,9 @@ export default function HomeBackground({ portals }: Props) {
         </div>
       )}
 
-      {/* Isaac's Ram text in bottom left */}
+      {/* Arrowsmith text in bottom left */}
       <div className="fixed bottom-6 left-6 z-10 text-5xl font-medium" style={{ color: '#c9c9b8' }}>
-        Isaacs Ram
+        Arrowsmith
       </div>
 
       {/* Flying circle - expands 3x as it flies off the top of the screen */}

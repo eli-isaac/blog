@@ -69,9 +69,9 @@ export default function Layout() {
         {/* Neural network background */}
         {showBackground && <PostsBackground theme={sidebarConfig.theme} />}
         
-        {/* Isaac's Ram text at bottom */}
+        {/* Arrowsmith text at bottom */}
         <Link to="/" className="absolute bottom-6 left-6 z-10 text-3xl font-medium no-underline hover:opacity-80 transition-opacity" style={{ color: '#c9c9b8' }}>
-          Isaac's Ram
+          Arrowsmith
         </Link>
       </aside>
 

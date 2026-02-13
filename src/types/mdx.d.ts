@@ -8,6 +8,7 @@ declare module '*.mdx' {
     date: string
     authors?: string[]
     slug: string
+    description?: string
   }
   
   export const meta: PostMeta

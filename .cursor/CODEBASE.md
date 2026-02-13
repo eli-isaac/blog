@@ -1,0 +1,198 @@
+# Arrowsmith — Codebase Reference for Agents
+
+This is a detailed technical reference for AI agents working on this codebase. For human-friendly info, see `README.md` in the project root.
+
+## Tech Stack
+
+| Layer        | Technology                    | Version  |
+|--------------|-------------------------------|----------|
+| Framework    | React                         | 19.x     |
+| Build        | Vite                          | 7.x      |
+| Language     | TypeScript                    | 5.x      |
+| Styling      | Tailwind CSS                  | 4.x      |
+| Content      | MDX (@mdx-js/rollup)          | 3.x      |
+| Routing      | React Router DOM              | 7.x      |
+| Animations   | Framer Motion                 | 12.x     |
+| Math         | KaTeX (remark-math + rehype-katex) | -   |
+| Visualization| Mafs                          | 0.21.x   |
+| Deployment   | Netlify (SPA mode)            | -        |
+
+## Directory Structure
+
+```
+/
+├── index.html                     # HTML shell — SEO meta tags, fonts, favicon
+├── vite.config.ts                 # Vite config — MDX plugin, math plugins, Tailwind
+├── package.json                   # Dependencies and scripts
+├── tsconfig.json                  # TypeScript config (ES2020, strict, bundler resolution)
+├── public/
+│   ├── _redirects                 # Netlify SPA redirect rule (/* → /index.html)
+│   └── ram.png                    # Favicon image
+├── src/
+│   ├── main.tsx                   # React DOM entry point
+│   ├── App.tsx                    # Router setup — all routes defined here
+│   ├── index.css                  # Global CSS (Tailwind imports, KaTeX overrides, animations)
+│   ├── vite-env.d.ts              # Vite client types
+│   ├── sidebar.json               # (Currently unused sidebar config)
+│   │
+│   ├── content/                   # BLOG POSTS LIVE HERE
+│   │   ├── posts.ts               # Central post registry — single source of truth
+│   │   ├── activation-functions.mdx
+│   │   ├── placeholder-journey.mdx
+│   │   └── placeholder-ideas.mdx
+│   │
+│   ├── components/
+│   │   ├── MDXPost.tsx            # MDX wrapper — injects global components, handles SEO
+│   │   ├── PostPage.tsx           # Article layout shell (header + body)
+│   │   ├── PostHeader.tsx         # Title/subtitle/author/date display (small & large)
+│   │   ├── PostPreview.tsx        # Clickable preview card for posts list
+│   │   ├── Posts.tsx              # Posts list with hover animations
+│   │   ├── ArticleBody.tsx        # Fade-in wrapper for post content
+│   │   ├── Layout.tsx             # Sidebar + content layout for non-home pages
+│   │   ├── HomeBackground.tsx     # Home page animated particle canvas + portals
+│   │   ├── HomeButton.tsx         # Small nav button with blog name
+│   │   ├── PostsBackground.tsx    # Animated neural-network sidebar background
+│   │   ├── ActivationGraph.tsx    # Interactive activation function plots (uses Mafs)
+│   │   ├── NeuralNetworkDemo.tsx  # Re-exports neural-network/index.tsx
+│   │   └── neural-network/        # Self-contained interactive NN training demo
+│   │       ├── index.tsx          # Main component (NeuralNetworkProvider wrapper)
+│   │       ├── Canvas.tsx         # NN visualization canvas
+│   │       ├── Controls.tsx       # Training controls UI
+│   │       ├── context.tsx        # React context for NN state
+│   │       ├── network.ts         # Pure NN logic (forward pass, backprop)
+│   │       ├── ProblemSelector.tsx # Dataset picker (XOR, circle, spiral, etc.)
+│   │       ├── problems.ts        # Dataset definitions
+│   │       └── TrainingLoop.tsx   # Training step loop component
+│   │
+│   ├── hooks/
+│   │   └── useDocumentMeta.ts     # Dynamic <title> and meta tag management for SEO
+│   │
+│   ├── context/
+│   │   └── SidebarContext.tsx      # Sidebar open/close state (mobile responsive)
+│   │
+│   ├── pages/
+│   │   ├── Home.tsx               # Home page — particle animation with portal nodes
+│   │   ├── Posts.tsx              # Posts listing page (wraps Posts component)
+│   │   ├── Projects.tsx           # Placeholder projects page
+│   │   └── About.tsx              # Placeholder about page
+│   │
+│   └── types/
+│       └── mdx.d.ts               # TypeScript declarations for .mdx imports
+│
+└── .cursor/
+    ├── CODEBASE.md                # THIS FILE — technical reference for agents
+    └── ADDING_BLOG_POSTS.md       # Step-by-step guide for adding new posts
+```
+
+## Architecture Overview
+
+### Routing
+
+All routes are defined in `src/App.tsx`. The app uses React Router v7 with `BrowserRouter`.
+
+**Route structure:**
+- `/` → `Home` (no sidebar layout — standalone animated page)
+- `/posts` → `Posts` (inside `Layout` with sidebar)
+- `/posts/:slug` → `MDXPost` (inside `Layout` with sidebar) — dynamically generated from `posts` array
+- `/projects` → `Projects` (inside `Layout` with sidebar)
+- `/about` → `About` (inside `Layout` with sidebar)
+
+Routes are wrapped in `AnimatePresence` for page transition animations.
+
+**Important:** Post routes are **not** file-based. They are generated by iterating over the `posts` array exported from `src/content/posts.ts`. Adding a new MDX file alone is not enough — it must also be registered in `posts.ts`.
+
+### Blog Post Pipeline
+
+1. **Author creates** `src/content/<slug>.mdx` with a `meta` export
+2. **Author registers** the post in `src/content/posts.ts` (import + array entry)
+3. **`App.tsx`** reads the `posts` array and creates a `<Route>` for each
+4. **`MDXPost.tsx`** wraps the MDX component with `PostPage` layout and injects global components via the `mdxComponents` object
+5. **`useDocumentMeta`** hook sets the browser title and SEO meta tags per post
+
+### SEO
+
+- **Static meta tags** are in `index.html` (title, description, OG, Twitter Card, robots, keywords)
+- **Dynamic meta tags** are managed by `src/hooks/useDocumentMeta.ts`, used in:
+  - `MDXPost.tsx` — per-post title and description
+  - `Home.tsx`, `Posts.tsx`, `Projects.tsx`, `About.tsx` — per-page title and description
+- The hook sets `document.title` to `"Page Title — Arrowsmith"` and updates meta tags
+- On unmount, it restores default values
+
+### Styling
+
+- **Tailwind CSS v4** via the `@tailwindcss/vite` plugin (no `tailwind.config.js` — configured in CSS)
+- **Global CSS** in `src/index.css` includes Tailwind imports, KaTeX styles, and custom animations
+- **Font**: Outfit (Google Fonts, loaded in `index.html`)
+- **Background**: `#efefe2` (warm cream) used throughout
+- **Post body** is constrained to `max-w-xl` with left offset on desktop (`md:ml-[20%]`)
+- **MDX elements** (h2, h3, p, ul, ol, etc.) are styled via className overrides in `MDXPost.tsx`
+
+### Animations
+
+- **Framer Motion** handles page transitions (`AnimatePresence`), layout animations (`layoutId`), and component entrance effects
+- **Home page**: Full-screen canvas particle animation (`HomeBackground.tsx`) with interactive portal nodes for navigation
+- **Sidebar**: Animated neural-network canvas background (`PostsBackground.tsx`)
+- **Post previews**: Hover highlight effect with animated background div
+
+### Layout
+
+- **Home page** (`/`): Full-screen, no sidebar. Animated particle background with clickable portal nodes.
+- **All other pages**: `Layout.tsx` provides a fixed sidebar (left, 256px) with a neural-network animation background and "Arrowsmith" link back to home. Content area is to the right with flexible width.
+- **Mobile**: Sidebar is hidden by default, toggled via hamburger button. Overlay dims content when sidebar is open.
+
+## Key Files to Know
+
+| File | Why it matters |
+|------|---------------|
+| `src/content/posts.ts` | Single source of truth for all blog posts. Must be updated when adding/removing posts. |
+| `src/components/MDXPost.tsx` | Controls what components are available in MDX and how HTML elements are styled. Edit this to add new global components. |
+| `src/App.tsx` | All routes. Post routes are auto-generated from `posts.ts`. |
+| `index.html` | SEO defaults, fonts, favicon. |
+| `src/hooks/useDocumentMeta.ts` | Dynamic SEO for all pages. |
+| `vite.config.ts` | Build config — MDX and math plugin setup. |
+
+## Scripts
+
+```bash
+npm run dev      # Start dev server (Vite)
+npm run build    # Production build → dist/
+npm run preview  # Preview production build locally
+npm run lint     # ESLint
+```
+
+## Deployment
+
+Deployed on **Netlify**. The `public/_redirects` file contains `/* /index.html 200` for SPA routing. Build command is `npm run build`, publish directory is `dist/`.
+
+## Common Agent Tasks
+
+### Add a new blog post
+See `ADDING_BLOG_POSTS.md` in this directory.
+
+### Add a new page (non-blog)
+1. Create a page component in `src/pages/`
+2. Add a route in `src/App.tsx` (inside the `<Route element={<Layout />}>` group if it should have the sidebar)
+3. Add `useDocumentMeta` for SEO
+4. Optionally add a portal node in `src/pages/Home.tsx` for home page navigation
+
+### Add a new global MDX component
+1. Create or import the component in `src/components/MDXPost.tsx`
+2. Add it to the `mdxComponents` object
+3. It's now available in all MDX files without importing
+
+### Change the blog name or branding
+The name "Arrowsmith" appears in:
+- `index.html` (title, meta tags)
+- `src/components/Layout.tsx` (sidebar link text)
+- `src/components/HomeBackground.tsx` (home page text overlay)
+- `src/components/HomeButton.tsx` (nav button text)
+- `src/hooks/useDocumentMeta.ts` (title suffix and default descriptions)
+
+### Modify the sidebar
+- Sidebar layout: `src/components/Layout.tsx`
+- Sidebar background animation: `src/components/PostsBackground.tsx`
+- Sidebar state management: `src/context/SidebarContext.tsx`
+
+### Change the home page animation
+- All animation config constants are at the top of `src/components/HomeBackground.tsx`
+- Portal nodes are defined in `src/pages/Home.tsx`

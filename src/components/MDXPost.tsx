@@ -3,6 +3,7 @@ import type { MDXComponents } from 'mdx/types'
 import PostPage from './PostPage'
 import ActivationGraph from './ActivationGraph'
 import NeuralNetworkDemo from './NeuralNetworkDemo'
+import useDocumentMeta from '../hooks/useDocumentMeta'
 
 export interface PostMeta {
   title: string
@@ -10,6 +11,7 @@ export interface PostMeta {
   date: string
   authors?: string[]
   slug: string
+  description?: string
 }
 
 // Check if paragraph contains only math (for centering block equations)
@@ -75,6 +77,16 @@ interface MDXPostProps {
 }
 
 export default function MDXPost({ meta, Content }: MDXPostProps) {
+  const description = meta.description || meta.subtitle || meta.title
+  const authorStr = meta.authors?.join(', ') || ''
+
+  useDocumentMeta({
+    title: meta.title,
+    description: `${description}${authorStr ? ` — by ${authorStr}` : ''}`,
+    ogType: 'article',
+    keywords: meta.title.toLowerCase().split(/\s+/).join(', '),
+  })
+
   return (
     <PostPage
       title={meta.title}

@@ -11,6 +11,7 @@ export interface PostMeta {
   date: string
   authors?: string[]
   slug: string
+  description?: string
 }
 
 export interface Post {

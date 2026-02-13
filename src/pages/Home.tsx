@@ -1,4 +1,5 @@
 import HomeBackground, { PortalConfig } from '../components/HomeBackground'
+import useDocumentMeta from '../hooks/useDocumentMeta'
 
 // Define portal nodes - add more here for additional pages
 const portals: PortalConfig[] = [
@@ -19,5 +20,10 @@ const portals: PortalConfig[] = [
 ]
 
 export default function Home() {
+  useDocumentMeta({
+    title: 'Arrowsmith',
+    description: 'Explanatory articles and novel ideas on machine learning, optimization, and philosophy.',
+  })
+
   return <HomeBackground portals={portals} />
 }
