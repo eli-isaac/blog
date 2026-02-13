@@ -11,7 +11,7 @@ const BACKGROUND_COLOR = '#efefe2'
 
 // Construct boundary
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
-const MAX_CONSTRUCT_RADIUS = 300 // Max radius of the construct circle (px)
+const MAX_CONSTRUCT_RADIUS = 270 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.05 // Fraction of construct radius nodes start in
 const SPHERE_DURATION = 14 // Seconds nodes bounce inside the sphere
 const EXPANSION_DURATION = 5 // Seconds for sphere boundary to expand to full screen
@@ -26,12 +26,14 @@ const CONDENSE_DURATION = 1.2 // Seconds for nodes to scrunch back to center on 
 const TEXT_WOBBLE_SPEED = 5 // Speed of gentle wobble after text forms
 const TEXT_WOBBLE_RADIUS = 0.6 // Max wobble distance from target (px)
 const TEXT_TO_RENDER = 'ARROWSMITH'
-const TEXT_WIDTH_RATIO = 0.92 // Text width as fraction of canvas width
+const TEXT_WIDTH_RATIO_MOBILE = 0.92 // Text width as fraction of canvas width on mobile
+const TEXT_WIDTH_RATIO_DESKTOP = 0.4 // Text width as fraction of canvas width on desktop
 const TEXT_MAX_FONT_SIZE = 400 // Cap on computed font size (px)
+const TEXT_FONT_WEIGHT = 400 // Lighter weight for thinner letter strokes
 
 // Node settings
 const NODE_COUNT_MOBILE = 450
-const NODE_COUNT_DESKTOP = 800
+const NODE_COUNT_DESKTOP = 500
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
 const NODE_MIN_RADIUS_MOBILE = 2
 const NODE_MAX_RADIUS_MOBILE = 3
@@ -45,7 +47,7 @@ const NODE_MAX_SHADE = 210 // Lighter grey
 
 // Movement settings
 const NODE_SPEED_MOBILE = 0.45
-const NODE_SPEED_DESKTOP = 2
+const NODE_SPEED_DESKTOP = 1
 const NODE_SPEED = window.innerWidth < 768 ? NODE_SPEED_MOBILE : NODE_SPEED_DESKTOP
 const NODE_SPEED_MIN_MULTIPLIER = 0.3 // Min random speed factor per node
 const NODE_SPEED_MAX_MULTIPLIER = 2.8 // Max random speed factor per node
@@ -124,17 +126,18 @@ function sampleTextPositions(
   offscreen.width = canvasWidth
   offscreen.height = canvasHeight
   const offCtx = offscreen.getContext('2d')!
+  const textWidthRatio = canvasWidth < 768 ? TEXT_WIDTH_RATIO_MOBILE : TEXT_WIDTH_RATIO_DESKTOP
 
-  // Calculate font size so text fills ~TEXT_WIDTH_RATIO of canvas width
+  // Calculate font size so text fills ~textWidthRatio of canvas width
   let fontSize = 200
-  offCtx.font = `700 ${fontSize}px "Outfit", sans-serif`
+  offCtx.font = `${TEXT_FONT_WEIGHT} ${fontSize}px "Outfit", sans-serif`
   const measured = offCtx.measureText(text)
-  const targetWidth = canvasWidth * TEXT_WIDTH_RATIO
+  const targetWidth = canvasWidth * textWidthRatio
   fontSize = Math.floor(fontSize * (targetWidth / measured.width))
   fontSize = Math.min(fontSize, TEXT_MAX_FONT_SIZE)
 
   offCtx.clearRect(0, 0, canvasWidth, canvasHeight)
-  offCtx.font = `700 ${fontSize}px "Outfit", sans-serif`
+  offCtx.font = `${TEXT_FONT_WEIGHT} ${fontSize}px "Outfit", sans-serif`
   offCtx.textAlign = 'center'
   offCtx.textBaseline = 'middle'
   offCtx.fillStyle = 'black'
