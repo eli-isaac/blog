@@ -508,9 +508,14 @@ export default function HomeBackground({ portals }: Props) {
       )}
 
       {/* Arrowsmith text in bottom left */}
-      <div className="fixed bottom-6 left-6 z-10 text-5xl font-medium" style={{ color: '#c9c9b8' }}>
+      <motion.div
+        layoutId="arrowsmith-title"
+        className="fixed bottom-6 left-6 z-10 text-5xl font-medium"
+        style={{ color: '#c9c9b8' }}
+        transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+      >
         Arrowsmith
-      </div>
+      </motion.div>
 
       {/* Flying circle - expands 3x as it flies off the top of the screen */}
       {flyingPortal && (

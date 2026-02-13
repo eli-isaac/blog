@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useSidebar } from '../context/SidebarContext'
 import PostsBackground, { SIDEBAR_THEMES } from './PostsBackground'
 
@@ -70,8 +71,15 @@ export default function Layout() {
         {showBackground && <PostsBackground theme={sidebarConfig.theme} />}
         
         {/* Arrowsmith text at bottom */}
-        <Link to="/" className="absolute bottom-6 left-6 z-10 text-3xl font-medium no-underline hover:opacity-80 transition-opacity" style={{ color: '#c9c9b8' }}>
-          Arrowsmith
+        <Link to="/" className="absolute bottom-6 left-6 z-10 no-underline hover:opacity-80 transition-opacity">
+          <motion.span
+            layoutId="arrowsmith-title"
+            className="text-3xl font-medium block"
+            style={{ color: '#c9c9b8' }}
+            transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+          >
+            Arrowsmith
+          </motion.span>
         </Link>
       </aside>
 
