@@ -12,13 +12,26 @@ const BACKGROUND_COLOR = '#efefe2'
 // Construct boundary
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
 const MAX_CONSTRUCT_RADIUS = 300 // Max radius of the construct circle (px)
-const SPAWN_RADIUS_RATIO = 0.08 // Fraction of construct radius nodes start in
-const EXPANSION_PAUSE = 22 // Seconds after page load before second expansion starts
-const EXPANSION_DURATION = 3 // Seconds for the sphere to expand to fill the screen
+const SPAWN_RADIUS_RATIO = 0.05 // Fraction of construct radius nodes start in
+const SPHERE_DURATION = 14 // Seconds nodes bounce inside the sphere
+const EXPANSION_DURATION = 5 // Seconds for sphere boundary to expand to full screen
+const SCATTER_DURATION = 7 // Seconds nodes float freely before text forms
+const TEXT_FORMATION_DURATION = 7 // Seconds for nodes to lerp into text positions
+const FORMATION_STAGGER = 5 // Seconds over which node start times are spread
+const FORMATION_VELOCITY_DECAY = 0.97 // Velocity retention per frame during formation
+const FORMATION_WANDER_STRENGTH = 1 // Random velocity impulse during formation (fades to 0)
+// Derived: total seconds before text formation begins
+const TEXT_START = SPHERE_DURATION + EXPANSION_DURATION + SCATTER_DURATION
+const CONDENSE_DURATION = 1.2 // Seconds for nodes to scrunch back to center on reset
+const TEXT_WOBBLE_SPEED = 5 // Speed of gentle wobble after text forms
+const TEXT_WOBBLE_RADIUS = 1.5 // Max wobble distance from target (px)
+const TEXT_TO_RENDER = 'ARROWSMITH'
+const TEXT_WIDTH_RATIO = 0.65 // Text width as fraction of canvas width
+const TEXT_MAX_FONT_SIZE = 400 // Cap on computed font size (px)
 
 // Node settings
-const NODE_COUNT_MOBILE = 170
-const NODE_COUNT_DESKTOP = 400
+const NODE_COUNT_MOBILE = 250
+const NODE_COUNT_DESKTOP = 800
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
 const NODE_MIN_RADIUS = 4
 const NODE_MAX_RADIUS = 7
@@ -28,7 +41,7 @@ const NODE_MAX_SHADE = 210 // Lighter grey
 
 // Movement settings
 const NODE_SPEED_MOBILE = 0.45
-const NODE_SPEED_DESKTOP = 0.6
+const NODE_SPEED_DESKTOP = 2
 const NODE_SPEED = window.innerWidth < 768 ? NODE_SPEED_MOBILE : NODE_SPEED_DESKTOP
 const NODE_SPEED_MIN_MULTIPLIER = 0.3 // Min random speed factor per node
 const NODE_SPEED_MAX_MULTIPLIER = 2.8 // Max random speed factor per node
@@ -46,16 +59,19 @@ const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5 // Click/hover detection area multiplie
 
 // Hover highlight settings (for regular nodes and edges near cursor)
 const HOVER_DISTANCE = 40 // How close cursor needs to be to highlight (px)
-const HOVER_OPACITY_MULTIPLIER = 1 // Opacity multiplier when hovered
-const HOVER_REPEL_STRENGTH = 0.25 // How strongly cursor repels nearby nodes (0 = off)
+const HOVER_OPACITY_REDUCTION = 0.5 // How much opacity drops near cursor (0 = no change, 1 = invisible)
 const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
 
 // Connection settings
-const CONNECTION_DISTANCE = 340
-const CONNECTION_PROBABILITY = 0.2 // Probability a valid pair is connected (0–1)
+const CONNECTION_DISTANCE = 300
+const CONNECTION_PROBABILITY = 0.08 // Probability a valid pair is connected (0–1)
 const CONNECTION_OPACITY = 0.13
 const CONNECTION_LINE_WIDTH = .8
 const CONNECTION_COLOR = '100, 100, 100'
+
+// Edge vignette shadow
+const EDGE_SHADOW_SIZE = 200 // Shadow blur radius from edges (px)
+const EDGE_SHADOW_OPACITY = 0.15 // Shadow darkness at edges
 
 // Flying animation settings
 const NAVIGATION_DELAY = 700 // ms before navigating after portal click
@@ -91,6 +107,59 @@ function drawSphereNode(
 }
 
 // =============================================================================
+// TEXT POSITION SAMPLING
+// =============================================================================
+
+function sampleTextPositions(
+  text: string,
+  canvasWidth: number,
+  canvasHeight: number,
+  count: number,
+): { x: number; y: number }[] {
+  const offscreen = document.createElement('canvas')
+  offscreen.width = canvasWidth
+  offscreen.height = canvasHeight
+  const offCtx = offscreen.getContext('2d')!
+
+  // Calculate font size so text fills ~TEXT_WIDTH_RATIO of canvas width
+  let fontSize = 200
+  offCtx.font = `700 ${fontSize}px "Outfit", sans-serif`
+  const measured = offCtx.measureText(text)
+  const targetWidth = canvasWidth * TEXT_WIDTH_RATIO
+  fontSize = Math.floor(fontSize * (targetWidth / measured.width))
+  fontSize = Math.min(fontSize, TEXT_MAX_FONT_SIZE)
+
+  offCtx.clearRect(0, 0, canvasWidth, canvasHeight)
+  offCtx.font = `700 ${fontSize}px "Outfit", sans-serif`
+  offCtx.textAlign = 'center'
+  offCtx.textBaseline = 'middle'
+  offCtx.fillStyle = 'black'
+  offCtx.fillText(text, canvasWidth / 2, canvasHeight / 2)
+
+  const imageData = offCtx.getImageData(0, 0, canvasWidth, canvasHeight)
+  const pixels = imageData.data
+  const positions: { x: number; y: number }[] = []
+
+  const step = 2
+  for (let y = 0; y < canvasHeight; y += step) {
+    for (let x = 0; x < canvasWidth; x += step) {
+      const idx = (y * canvasWidth + x) * 4
+      if (pixels[idx + 3] > 128) {
+        positions.push({ x, y })
+      }
+    }
+  }
+
+  // Fisher-Yates shuffle
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[positions[i], positions[j]] = [positions[j], positions[i]]
+  }
+
+  return positions.slice(0, count)
+}
+
+// =============================================================================
 // PORTAL NODE CONFIGURATION
 // =============================================================================
 
@@ -113,6 +182,13 @@ interface Node {
   radius: number
   opacity: number
   color: string // per-node RGB shade string
+  targetX?: number // text formation target x
+  targetY?: number // text formation target y
+  formStartX?: number // position when this node's formation began
+  formStartY?: number
+  formDelay: number // random stagger delay for text formation start
+  wobblePhase: number // random phase offset for post-formation wobble
+  wobbleFreq: number // random frequency multiplier for wobble
 }
 
 interface PortalNode extends Node {
@@ -190,7 +266,7 @@ export default function HomeBackground({ portals }: Props) {
     )
     // Full-screen radius: distance from center to the farthest corner
     const fullScreenRadius = Math.sqrt(centerX * centerX + centerY * centerY)
-    const startTime = performance.now()
+    let startTime = performance.now()
 
     // Create regular nodes — spawned bunched near the center, they drift outward naturally
     const SPAWN_RADIUS = sphereRadius * SPAWN_RADIUS_RATIO
@@ -210,6 +286,9 @@ export default function HomeBackground({ portals }: Props) {
         radius: NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS),
         opacity: NODE_OPACITY,
         color: `${s}, ${s}, ${s}`,
+        formDelay: Math.random() * FORMATION_STAGGER,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleFreq: 0.7 + Math.random() * 0.8,
       })
     }
     nodesRef.current = nodes
@@ -230,6 +309,9 @@ export default function HomeBackground({ portals }: Props) {
         radius: config.radius ?? PORTAL_RADIUS,
         opacity: 0.5,
         color: config.color,
+        formDelay: Math.random() * FORMATION_STAGGER,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleFreq: 0.7 + Math.random() * 0.8,
         config,
       }
     })
@@ -252,6 +334,7 @@ export default function HomeBackground({ portals }: Props) {
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
 
+      // Portal clicks take priority
       for (const portal of portalNodes) {
         const dx = portal.x - x
         const dy = portal.y - y
@@ -261,6 +344,11 @@ export default function HomeBackground({ portals }: Props) {
           handlePortalClick(portal)
           return
         }
+      }
+
+      // Click on fully formed text → reset animation
+      if (isTextFullyFormed() && isInTextBounds(x, y)) {
+        resetAnimation()
       }
     }
     canvas.addEventListener('click', handleClick)
@@ -285,7 +373,9 @@ export default function HomeBackground({ portals }: Props) {
         }
       }
       
-      canvas.style.cursor = foundPortal ? 'pointer' : 'default'
+      // Pointer cursor for portals or clickable formed text
+      const overText = isTextFullyFormed() && isInTextBounds(x, y)
+      canvas.style.cursor = (foundPortal || overText) ? 'pointer' : 'default'
       
       if (foundPortal) {
         hoveredPortalIdRef.current = foundPortal.config.id
@@ -316,26 +406,158 @@ export default function HomeBackground({ portals }: Props) {
       return Math.sqrt(dx * dx + dy * dy)
     }
 
+    let textTargetsComputed = false
+    let textBounds: { minX: number; maxX: number; minY: number; maxY: number } | null = null
+    const TEXT_FULLY_FORMED_TIME = () => TEXT_START + FORMATION_STAGGER + TEXT_FORMATION_DURATION
+
+    // Check if all nodes have finished forming
+    const isTextFullyFormed = () => {
+      return textTargetsComputed && (performance.now() - startTime) / 1000 >= TEXT_FULLY_FORMED_TIME()
+    }
+
+    // Check if a point is inside the text bounding box (with padding)
+    const isInTextBounds = (x: number, y: number, padding = 30) => {
+      if (!textBounds) return false
+      return x >= textBounds.minX - padding && x <= textBounds.maxX + padding &&
+             y >= textBounds.minY - padding && y <= textBounds.maxY + padding
+    }
+
+    // Condense state
+    let condensingStart: number | null = null
+
+    // Start condensing: nodes scrunch toward center, then restart
+    const resetAnimation = () => {
+      condensingStart = performance.now()
+      textTargetsComputed = false
+      textBounds = null
+      // Capture current positions as condense start, clear formation data
+      for (const node of nodes) {
+        node.formStartX = node.x
+        node.formStartY = node.y
+        node.targetX = undefined
+        node.targetY = undefined
+      }
+      for (const portal of portalNodes) {
+        portal.formStartX = portal.x
+        portal.formStartY = portal.y
+      }
+    }
+
+    // Finish condense: snap nodes to center ball and restart timer
+    const finishCondense = () => {
+      condensingStart = null
+      startTime = performance.now()
+      for (const node of nodes) {
+        const angle = Math.random() * Math.PI * 2
+        const r = Math.sqrt(Math.random()) * SPAWN_RADIUS
+        node.x = centerX + Math.cos(angle) * r
+        node.y = centerY + Math.sin(angle) * r
+        const vx = (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER))
+        const vy = (Math.random() - 0.5) * NODE_SPEED * (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER))
+        node.vx = vx
+        node.vy = vy
+        node.baseSpeed = Math.sqrt(vx * vx + vy * vy)
+        node.formDelay = Math.random() * FORMATION_STAGGER
+      }
+      for (const portal of portalNodes) {
+        const angle = Math.random() * Math.PI * 2
+        const r = Math.random() * SPAWN_RADIUS
+        portal.x = centerX + Math.cos(angle) * r
+        portal.y = centerY + Math.sin(angle) * r
+        const pvx = (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER
+        const pvy = (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER
+        portal.vx = pvx
+        portal.vy = pvy
+        portal.baseSpeed = Math.sqrt(pvx * pvx + pvy * pvy)
+      }
+    }
+
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Compute current construct radius based on elapsed time
+      // --- CONDENSE PHASE: pull everything toward center then restart ---
+      if (condensingStart !== null) {
+        const condenseElapsed = (performance.now() - condensingStart) / 1000
+        if (condenseElapsed >= CONDENSE_DURATION) {
+          finishCondense()
+        } else {
+          // Simple lerp toward center — no velocity, no oscillation
+          const t = condenseElapsed / CONDENSE_DURATION
+          const eased = t * t // easeIn — accelerates into the center
+
+          for (const node of nodes) {
+            node.x = node.formStartX! + (centerX - node.formStartX!) * eased
+            node.y = node.formStartY! + (centerY - node.formStartY!) * eased
+            drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
+          }
+          for (const portal of portalNodes) {
+            if (flyingPortalIdRef.current === portal.config.id) continue
+            portal.x = portal.formStartX! + (centerX - portal.formStartX!) * eased
+            portal.y = portal.formStartY! + (centerY - portal.formStartY!) * eased
+            const isHovered = hoveredPortalIdRef.current === portal.config.id
+            drawSphereNode(ctx, portal.x, portal.y, portal.radius, portal.config.color, isHovered ? PORTAL_HOVER_OPACITY : PORTAL_OPACITY)
+          }
+          animationRef.current = requestAnimationFrame(animate)
+          return // skip normal animation during condense
+        }
+      }
+
+      // Compute elapsed time and determine animation phase
       const elapsed = (performance.now() - startTime) / 1000
+      const textPhaseActive = elapsed >= TEXT_START
+
+      // Compute text targets once when text phase begins
+      if (textPhaseActive && !textTargetsComputed) {
+        const targets = sampleTextPositions(TEXT_TO_RENDER, canvas.width, canvas.height, nodes.length)
+        for (let i = 0; i < nodes.length; i++) {
+          if (i < targets.length) {
+            nodes[i].targetX = targets[i].x
+            nodes[i].targetY = targets[i].y
+          } else {
+            const rt = targets[Math.floor(Math.random() * targets.length)]
+            nodes[i].targetX = rt.x
+            nodes[i].targetY = rt.y
+          }
+        }
+        textTargetsComputed = true
+
+        // Compute text bounding box for click detection
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        for (const node of nodes) {
+          if (node.targetX !== undefined) {
+            if (node.targetX < minX) minX = node.targetX
+            if (node.targetX > maxX) maxX = node.targetX
+            if (node.targetY! < minY) minY = node.targetY!
+            if (node.targetY! > maxY) maxY = node.targetY!
+          }
+        }
+        textBounds = { minX, maxX, minY, maxY }
+      }
+
+      // Construct radius: sphere → expand → full screen (stays full for scatter + text)
       let constructRadius: number
-      if (elapsed < EXPANSION_PAUSE) {
+      if (elapsed < SPHERE_DURATION) {
         constructRadius = sphereRadius
-      } else {
-        const t = Math.min((elapsed - EXPANSION_PAUSE) / EXPANSION_DURATION, 1)
-        // Smooth ease-out curve
+      } else if (elapsed < SPHERE_DURATION + EXPANSION_DURATION) {
+        const t = (elapsed - SPHERE_DURATION) / EXPANSION_DURATION
         const eased = 1 - (1 - t) * (1 - t)
         constructRadius = sphereRadius + (fullScreenRadius - sphereRadius) * eased
+      } else {
+        constructRadius = fullScreenRadius
       }
 
       const allNodes = [...nodes, ...portalNodes]
       const mouse = mouseRef.current
 
-      // Draw connections (only for pre-selected eligible pairs)
-      for (let i = 0; i < allNodes.length; i++) {
+      // Fade out connections as text forms
+      let connectionFade = 1
+      if (textPhaseActive && textTargetsComputed) {
+        const textT = Math.min((elapsed - TEXT_START) / TEXT_FORMATION_DURATION, 1)
+        connectionFade = Math.max(0, 1 - textT * 1.5) // fade out faster than formation
+      }
+
+      // Draw connections (only for pre-selected eligible pairs) — skip entirely once faded
+      if (connectionFade > 0.001) for (let i = 0; i < allNodes.length; i++) {
         for (let j = i + 1; j < allNodes.length; j++) {
           if (!connectionEligible.has(`${i}-${j}`)) continue
 
@@ -344,14 +566,14 @@ export default function HomeBackground({ portals }: Props) {
           const distance = Math.sqrt(dx * dx + dy * dy)
 
           if (distance < CONNECTION_DISTANCE) {
-            let opacity = (1 - distance / CONNECTION_DISTANCE) * CONNECTION_OPACITY
+            let opacity = (1 - distance / CONNECTION_DISTANCE) * CONNECTION_OPACITY * connectionFade
 
-            // Boost opacity if cursor is near this edge
+            // Reduce opacity if cursor is near this edge
             if (mouse) {
               const dist = pointToSegmentDist(mouse.x, mouse.y, allNodes[i].x, allNodes[i].y, allNodes[j].x, allNodes[j].y)
               if (dist < HOVER_DISTANCE) {
                 const proximity = 1 - dist / HOVER_DISTANCE
-                opacity *= 1 + proximity * (HOVER_OPACITY_MULTIPLIER - 1)
+                opacity *= 1 - proximity * HOVER_OPACITY_REDUCTION
               }
             }
 
@@ -367,59 +589,98 @@ export default function HomeBackground({ portals }: Props) {
 
       // Update and draw regular nodes
       for (const node of nodes) {
-        node.x += node.vx
-        node.y += node.vy
+        // Per-node staggered formation progress
+        const nodeStart = TEXT_START + node.formDelay
+        const textT = (elapsed >= nodeStart && textTargetsComputed && node.targetX !== undefined)
+          ? Math.min((elapsed - nodeStart) / TEXT_FORMATION_DURATION, 1)
+          : 0
 
-        // Bounce off circular boundary — randomize direction, keep speed
-        const ndx = node.x - centerX
-        const ndy = node.y - centerY
-        const nDist = Math.sqrt(ndx * ndx + ndy * ndy)
-        if (nDist > constructRadius) {
-          const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
-          // Pick a random inward-ish angle (biased away from the boundary)
-          const outAngle = Math.atan2(ndy, ndx)
-          const newAngle = outAngle + Math.PI + (Math.random() - 0.5) * BOUNCE_ANGLE_SPREAD
-          node.vx = Math.cos(newAngle) * speed
-          node.vy = Math.sin(newAngle) * speed
-          node.x = centerX + (ndx / nDist) * constructRadius
-          node.y = centerY + (ndy / nDist) * constructRadius
-        }
+        if (textT > 0) {
+          // Capture this node's start position on its first formation frame
+          if (node.formStartX === undefined) {
+            node.formStartX = node.x
+            node.formStartY = node.y
+          }
 
-        // Clamp to screen edges
-        if (node.x < 0) { node.x = 0; node.vx = Math.abs(node.vx) }
-        else if (node.x > canvas.width) { node.x = canvas.width; node.vx = -Math.abs(node.vx) }
-        if (node.y < 0) { node.y = 0; node.vy = Math.abs(node.vy) }
-        else if (node.y > canvas.height) { node.y = canvas.height; node.vy = -Math.abs(node.vy) }
+          // easeOutCubic — no midpoint acceleration, just smooth deceleration
+          const eased = 1 - Math.pow(1 - textT, 3)
 
-        // Boost opacity and repel from cursor if near this node
-        let opacity = node.opacity
-        if (mouse) {
-          const dx = node.x - mouse.x
-          const dy = node.y - mouse.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < HOVER_DISTANCE) {
-            const proximity = 1 - dist / HOVER_DISTANCE
-            opacity *= 1 + proximity * (HOVER_OPACITY_MULTIPLIER - 1)
+          if (textT < 1) {
+            // Random wander impulse that fades out
+            const wander = (1 - eased) * FORMATION_WANDER_STRENGTH
+            node.vx += (Math.random() - 0.5) * wander
+            node.vy += (Math.random() - 0.5) * wander
 
-            // Push node away from cursor
-            if (dist > 0) {
-              const repelMag = proximity * HOVER_REPEL_STRENGTH
-              node.vx += (dx / dist) * repelMag
-              node.vy += (dy / dist) * repelMag
+            // Decay velocity and drift formStart for natural curving
+            node.vx *= FORMATION_VELOCITY_DECAY
+            node.vy *= FORMATION_VELOCITY_DECAY
+            node.formStartX += node.vx
+            node.formStartY! += node.vy
+
+            // Lerp from drifting start to target
+            node.x = node.formStartX + (node.targetX! - node.formStartX) * eased
+            node.y = node.formStartY! + (node.targetY! - node.formStartY!) * eased
+          } else {
+            // Formation complete — per-node randomised wobble
+            const p = node.wobblePhase
+            const f = node.wobbleFreq
+            node.x = node.targetX!
+              + Math.sin(elapsed * TEXT_WOBBLE_SPEED * f + p) * TEXT_WOBBLE_RADIUS
+              + Math.sin(elapsed * TEXT_WOBBLE_SPEED * f * 2.3 + p * 1.7) * TEXT_WOBBLE_RADIUS * 0.3
+            node.y = node.targetY!
+              + Math.cos(elapsed * TEXT_WOBBLE_SPEED * f * 1.3 + p * 0.8) * TEXT_WOBBLE_RADIUS
+              + Math.cos(elapsed * TEXT_WOBBLE_SPEED * f * 0.7 + p * 2.1) * TEXT_WOBBLE_RADIUS * 0.4
+          }
+
+          drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
+        } else {
+          // SCATTER / SPHERE PHASE: normal physics
+          node.x += node.vx
+          node.y += node.vy
+
+          // Bounce off circular boundary
+          const ndx = node.x - centerX
+          const ndy = node.y - centerY
+          const nDist = Math.sqrt(ndx * ndx + ndy * ndy)
+          if (nDist > constructRadius) {
+            const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
+            const outAngle = Math.atan2(ndy, ndx)
+            const newAngle = outAngle + Math.PI + (Math.random() - 0.5) * BOUNCE_ANGLE_SPREAD
+            node.vx = Math.cos(newAngle) * speed
+            node.vy = Math.sin(newAngle) * speed
+            node.x = centerX + (ndx / nDist) * constructRadius
+            node.y = centerY + (ndy / nDist) * constructRadius
+          }
+
+          // Clamp to screen edges
+          if (node.x < 0) { node.x = 0; node.vx = Math.abs(node.vx) }
+          else if (node.x > canvas.width) { node.x = canvas.width; node.vx = -Math.abs(node.vx) }
+          if (node.y < 0) { node.y = 0; node.vy = Math.abs(node.vy) }
+          else if (node.y > canvas.height) { node.y = canvas.height; node.vy = -Math.abs(node.vy) }
+
+          // Hover: reduce opacity near cursor
+          let opacity = node.opacity
+          if (mouse) {
+            const dx = node.x - mouse.x
+            const dy = node.y - mouse.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < HOVER_DISTANCE) {
+              const proximity = 1 - dist / HOVER_DISTANCE
+              opacity *= 1 - proximity * HOVER_OPACITY_REDUCTION
             }
           }
-        }
 
-        // Gently recover speed toward original baseSpeed
-        const currentSpeed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
-        if (currentSpeed > 0) {
-          const recoveredSpeed = currentSpeed + (node.baseSpeed - currentSpeed) * SPEED_RECOVERY_RATE
-          const scale = recoveredSpeed / currentSpeed
-          node.vx *= scale
-          node.vy *= scale
-        }
+          // Gently recover speed toward original baseSpeed
+          const currentSpeed = Math.sqrt(node.vx * node.vx + node.vy * node.vy)
+          if (currentSpeed > 0) {
+            const recoveredSpeed = currentSpeed + (node.baseSpeed - currentSpeed) * SPEED_RECOVERY_RATE
+            const scale = recoveredSpeed / currentSpeed
+            node.vx *= scale
+            node.vy *= scale
+          }
 
-        drawSphereNode(ctx, node.x, node.y, node.radius, node.color, opacity)
+          drawSphereNode(ctx, node.x, node.y, node.radius, node.color, opacity)
+        }
       }
 
       // Update and draw portal nodes - more subtle, like regular nodes but colored
@@ -507,15 +768,13 @@ export default function HomeBackground({ portals }: Props) {
         </div>
       )}
 
-      {/* Arrowsmith text in bottom left */}
-      <motion.div
-        layoutId="arrowsmith-title"
-        className="fixed bottom-6 left-6 z-10 text-5xl font-medium"
-        style={{ color: '#c9c9b8' }}
-        transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-      >
-        Arrowsmith
-      </motion.div>
+      {/* Edge vignette shadow */}
+      <div
+        className="fixed inset-0 z-[5] pointer-events-none"
+        style={{
+          boxShadow: `inset 0 0 ${EDGE_SHADOW_SIZE}px ${Math.round(EDGE_SHADOW_SIZE / 2.5)}px rgba(0, 0, 0, ${EDGE_SHADOW_OPACITY})`,
+        }}
+      />
 
       {/* Flying circle - expands 3x as it flies off the top of the screen */}
       {flyingPortal && (
