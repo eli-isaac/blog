@@ -27,7 +27,7 @@ This is a detailed technical reference for AI agents working on this codebase. F
 ├── tsconfig.json                  # TypeScript config (ES2020, strict, bundler resolution)
 ├── public/
 │   ├── _redirects                 # Netlify SPA redirect rule (/* → /index.html)
-│   └── ram.png                    # Favicon image
+│   └── arrowsmith.png             # Favicon image
 ├── src/
 │   ├── main.tsx                   # React DOM entry point
 │   ├── App.tsx                    # Router setup — all routes defined here
@@ -73,8 +73,7 @@ This is a detailed technical reference for AI agents working on this codebase. F
 │   ├── pages/
 │   │   ├── Home.tsx               # Home page — particle animation with portal nodes
 │   │   ├── Posts.tsx              # Posts listing page (wraps Posts component)
-│   │   ├── Projects.tsx           # Placeholder projects page
-│   │   └── About.tsx              # Placeholder about page
+│   │   └── About.tsx              # Short about page
 │   │
 │   └── types/
 │       └── mdx.d.ts               # TypeScript declarations for .mdx imports
@@ -94,7 +93,6 @@ All routes are defined in `src/App.tsx`. The app uses React Router v7 with `Brow
 - `/` → `Home` (no sidebar layout — standalone animated page)
 - `/posts` → `Posts` (inside `Layout` with sidebar)
 - `/posts/:slug` → `MDXPost` (inside `Layout` with sidebar) — dynamically generated from `posts` array
-- `/projects` → `Projects` (inside `Layout` with sidebar)
 - `/about` → `About` (inside `Layout` with sidebar)
 
 Routes are wrapped in `AnimatePresence` for page transition animations.
@@ -114,7 +112,7 @@ Routes are wrapped in `AnimatePresence` for page transition animations.
 - **Static meta tags** are in `index.html` (title, description, OG, Twitter Card, robots, keywords)
 - **Dynamic meta tags** are managed by `src/hooks/useDocumentMeta.ts`, used in:
   - `MDXPost.tsx` — per-post title and description
-  - `Home.tsx`, `Posts.tsx`, `Projects.tsx`, `About.tsx` — per-page title and description
+  - `Home.tsx`, `Posts.tsx`, `About.tsx` — per-page title and description
 - The hook sets `document.title` to `"Page Title — Arrowsmith"` and updates meta tags
 - On unmount, it restores default values
 
@@ -181,11 +179,11 @@ See `ADDING_BLOG_POSTS.md` in this directory.
 3. It's now available in all MDX files without importing
 
 ### Change the blog name or branding
-The name "Arrowsmith" appears in:
-- `index.html` (title, meta tags)
+The name "Arrowsmith" and favicon appear in:
+- `index.html` (title, meta tags, favicon `/arrowsmith.png`)
 - `src/components/Layout.tsx` (sidebar link text)
 - `src/components/HomeBackground.tsx` (home page text overlay)
-- `src/components/HomeButton.tsx` (nav button text)
+- `src/components/HomeButton.tsx` (nav button text and icon)
 - `src/hooks/useDocumentMeta.ts` (title suffix and default descriptions)
 
 ### Modify the sidebar

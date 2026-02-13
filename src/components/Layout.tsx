@@ -9,7 +9,7 @@ const SIDEBAR_CONFIG = {
     bgStyle: { background: '#efefe2' },
     theme: SIDEBAR_THEMES.posts,
   },
-  projects: {
+  about: {
     bgClass: 'border-stone-200/60',
     bgStyle: { background: '#efefe2' },
     theme: SIDEBAR_THEMES.projects,
@@ -23,7 +23,7 @@ const SIDEBAR_CONFIG = {
 
 function getSidebarConfig(pathname: string) {
   if (pathname.startsWith('/posts')) return SIDEBAR_CONFIG.posts
-  if (pathname.startsWith('/projects')) return SIDEBAR_CONFIG.projects
+  if (pathname.startsWith('/about')) return SIDEBAR_CONFIG.about
   return SIDEBAR_CONFIG.default
 }
 
@@ -32,7 +32,7 @@ export default function Layout() {
   const location = useLocation()
 
   const sidebarConfig = getSidebarConfig(location.pathname)
-  const showBackground = location.pathname.startsWith('/posts') || location.pathname.startsWith('/projects')
+  const showBackground = location.pathname.startsWith('/posts') || location.pathname.startsWith('/about')
 
   return (
     <div className="relative min-h-screen md:flex" style={{ backgroundColor: '#efefe2' }}>

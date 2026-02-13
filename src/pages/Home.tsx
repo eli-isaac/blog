@@ -11,11 +11,11 @@ const portals: PortalConfig[] = [
     label: 'Blog Posts',
   },
   {
-    id: 'projects',
-    path: '/projects',
+    id: 'about',
+    path: '/about',
     color: '80, 110, 90', // Muted green
     radius: 8,
-    label: 'Projects',
+    label: 'About',
   },
 ]
 

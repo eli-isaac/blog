@@ -4,7 +4,6 @@ import { SidebarProvider } from './context/SidebarContext'
 import Layout from './components/Layout'
 import MDXPost from './components/MDXPost'
 import Posts from './pages/Posts'
-import Projects from './pages/Projects'
 import About from './pages/About'
 import Home from './pages/Home'
 import { posts } from './content/posts'
@@ -28,7 +27,6 @@ function AnimatedRoutes() {
               element={<MDXPost meta={post.meta} Content={post.Content} />}
             />
           ))}
-          <Route path="/projects" element={<Projects />} />
           <Route path="/about" element={<About />} />
         </Route>
       </Routes>
