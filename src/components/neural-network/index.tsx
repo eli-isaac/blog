@@ -7,7 +7,7 @@ import TrainingLoop from './TrainingLoop'
 export default function NeuralNetworkDemo() {
   return (
     <NeuralNetworkProvider>
-      <div className="my-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+      <div className="my-8 p-6 border border-gray-300 rounded-lg">
         <Controls />
         <ProblemSelector>
           <Canvas />

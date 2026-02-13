@@ -33,7 +33,7 @@ export default function Canvas() {
       ref={canvasRef}
       width={280}
       height={280}
-      className="border border-gray-200 rounded bg-white mx-auto block"
+      className="border border-gray-200 rounded bg-transparent mx-auto block"
     />
   )
 }
