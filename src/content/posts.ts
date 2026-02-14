@@ -1,9 +1,8 @@
 import { ComponentType } from 'react'
 
 // Import MDX posts
+import DropLossContent, { meta as dropLossMeta } from './drop-loss.mdx'
 import ActivationFunctionsContent, { meta as activationFunctionsMeta } from './activation-functions.mdx'
-import PlaceholderJourneyContent, { meta as placeholderJourneyMeta } from './placeholder-journey.mdx'
-import PlaceholderIdeasContent, { meta as placeholderIdeasMeta } from './placeholder-ideas.mdx'
 
 export interface PostMeta {
   title: string
@@ -22,15 +21,11 @@ export interface Post {
 // Single source of truth for all posts
 export const posts: Post[] = [
   {
+    meta: dropLossMeta,
+    Content: DropLossContent,
+  },
+  {
     meta: activationFunctionsMeta,
     Content: ActivationFunctionsContent,
-  },
-  {
-    meta: placeholderJourneyMeta,
-    Content: PlaceholderJourneyContent,
-  },
-  {
-    meta: placeholderIdeasMeta,
-    Content: PlaceholderIdeasContent,
   },
 ]

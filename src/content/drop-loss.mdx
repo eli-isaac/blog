@@ -1,0 +1,171 @@
+export const meta = {
+  title: "Drop-Loss",
+  subtitle: "Learn More by Training on Less",
+  date: "2026-02-14",
+  authors: ["Eli Plutchok"],
+  slug: "drop-loss"
+}
+
+This post introduces **drop-loss**, an experimental training technique for language model pretraining. The idea is simple: during the early stages of training, ignore the tokens the model finds hardest to predict, and only backpropagate through the easier ones. Gradually reintroduce the hard tokens as training progresses. The result is a form of automated curriculum learning that requires just a few lines of code to implement and, in preliminary experiments, improves downstream evaluation performance across nearly every benchmark tested.
+
+## The Algorithm
+
+Standard language model training computes a cross-entropy loss over every token in a batch and backpropagates the average. Drop-loss modifies this as follows:
+
+1. Compute per-token cross-entropy loss as usual (forward pass is unchanged)
+2. Rank all tokens in the batch by their loss
+3. Identify the top X% with the highest loss (the tokens the model currently finds "hardest" to predict)
+4. Zero out their contribution to the loss
+5. Backpropagate only through the remaining tokens
+6. Over the course of training, linearly decay X% down to 0%, so that by the end all tokens are included
+
+The model learns to walk before it runs. Early in training, it focuses its gradient updates on the patterns it can actually make progress on. Later, once those foundations are solid, the harder tokens are gradually reintroduced.
+
+## Inspiration: Curriculum Learning and Continuation Methods
+
+The intuition behind drop-loss draws from two well-established ideas in machine learning and optimization.
+
+### Curriculum Learning
+
+In 2009, Yoshua Bengio and colleagues formalized the idea that neural networks can learn better when training examples are presented in a meaningful order — starting with easier examples and gradually increasing difficulty. They called this **curriculum learning** and showed that it could both speed up convergence and lead to better generalization [1]. The analogy is to how humans learn: a student studies arithmetic before calculus, not the other way around.
+
+A key challenge with curriculum learning has always been defining what "easy" and "hard" mean. Traditional approaches require hand-designed curricula or external difficulty metrics. Drop-loss sidesteps this entirely: the model's own loss on each token *is* the difficulty metric. Tokens with high loss are hard; tokens with low loss are easy. No external annotation or heuristic is needed.
+
+### Continuation Methods
+
+Drop-loss, like curriculum learning, also fits into the broader family of **continuation methods**, a class of optimization techniques where instead of directly solving a hard problem, you solve a sequence of progressively harder approximations [1][2]. The classic example is simulated annealing, but the idea applies broadly: start with a smoothed or simplified version of your objective, find a good solution, then gradually deform the objective toward the true target.
+
+In the drop-loss framing, the "simplified objective" is the loss computed over only the easier tokens. As training progresses and the drop percentage decays to zero, the objective continuously morphs into the standard cross-entropy loss. Bengio et al. explicitly drew this connection in their curriculum learning paper, arguing that curriculum strategies can be understood as a special case of continuation methods applied to the training objective [1].
+
+## Implementation
+
+I implemented a simple, but not necessarily optimal, version of drop-loss on top of [Andrej Karpathy's nanochat](https://github.com/karpathy/nanochat), a minimal and hackable LLM training codebase. The entire implementation required modifying only two files and adding a few CLI flags.
+
+The key change is in the model's `forward()` method. Instead of computing the standard mean cross-entropy loss, the code computes per-token loss, uses `torch.quantile` to find the top X% highest-loss tokens, masks them out, and takes the mean over only the remaining tokens. The mask is computed under `torch.no_grad()` so it's treated as a constant — gradients only flow through the kept tokens.
+
+```python
+per_token_loss = F.cross_entropy(flat_logits, flat_targets, ignore_index=-1, reduction='none')
+
+with torch.no_grad():
+    valid_losses = per_token_loss[valid_mask]
+    threshold = torch.quantile(valid_losses, 1.0 - drop_top_loss_pct)
+    keep_mask = (per_token_loss <= threshold) & valid_mask
+
+keep_weights = keep_mask.float()
+loss = (per_token_loss * keep_weights).sum() / keep_weights.sum()
+```
+
+The drop percentage is controlled by a linear schedule with four hyperparameters:
+
+| Parameter | Description |
+|---|---|
+| `--drop-loss-start` | Initial percentage of highest-loss tokens to drop (e.g. 0.10 = 10%) |
+| `--drop-loss-end` | Final percentage to drop (e.g. 0.0 = no dropping) |
+| `--drop-loss-decay-ratio` | Fraction of training over which to linearly decay from start to end |
+| `--drop-loss-warmup-ratio` | Fraction of training before dropping begins (allows the model to train normally first) |
+| `--drop-loss-random` | Flag to drop random tokens instead of highest-loss (for ablation) |
+
+For full implementation details and instructions for reproducing the experiments, see the [GitHub repo](https://github.com/eliplutchok/nanochat-drop-loss).
+
+## Results
+
+> **Important caveat:** These results are from a single run of each configuration on a small model. Due to limited compute budget, I was unable to run multiple seeds or test at larger scales. The results are encouraging but should barely even be treated as preliminary. See the [Limitations](#limitations) section for more detail.
+
+### Setup
+
+All three experiments used identical settings:
+
+- **Model**: depth-20 transformer (~124M parameters)
+- **Data**: FineWeb, with a data:param ratio of 12
+- **Hardware**: 8x H100 80GB SXM5 GPUs (provided by [Lambda](https://lambda.ai/))
+- **Evaluation**: nanochat's CORE benchmark suite (22 tasks, based on the DCLM paper)
+
+The three experiments differ only in their loss computation:
+
+| Experiment | Description |
+|---|---|
+| **E1** (baseline) | Standard cross-entropy loss over all tokens |
+| **E2** (drop-loss) | Drop highest-loss 10% of tokens, linearly decay to 0% over first half of training |
+| **E3** (random drop) | Drop random 10% of tokens with the same schedule (ablation control) |
+
+### CORE Metric
+
+| Experiment | CORE Metric |
+|---|---|
+| E1 (baseline) | 0.2195 |
+| **E2 (drop-loss)** | **0.2338** |
+| E3 (random drop) | 0.2286 |
+
+E2 achieves the highest CORE metric, a +0.0143 improvement over the baseline. E3 (random dropping) falls between the two, suggesting that some benefit comes from simply training on fewer tokens, but the strategic selection of *which* tokens to drop is what drives most of the gain.
+
+### Benchmark Results
+
+Focusing on the 9 benchmarks with the strongest signal at this model scale (centered accuracy, which subtracts the random baseline):
+
+| Benchmark | E1 (baseline) | E2 (drop-loss) | E3 (random drop) | Winner |
+|---|---|---|---|---|
+| hellaswag_zeroshot | 0.2756 | **0.2987** | 0.2712 | E2 |
+| hellaswag | 0.2740 | **0.2987** | 0.2778 | E2 |
+| piqa | 0.3602 | **0.4200** | 0.3808 | E2 |
+| arc_easy | 0.5112 | **0.5547** | 0.5123 | E2 |
+| lambada_openai | 0.3811 | **0.3880** | 0.3837 | E2 |
+| bigbench_qa_wikidata | 0.4726 | 0.4840 | **0.4852** | E3 |
+| squad | 0.2747 | **0.3080** | 0.2770 | E2 |
+| coqa | 0.2251 | **0.2440** | 0.2228 | E2 |
+| winogrande | 0.1018 | **0.1800** | 0.1255 | E2 |
+| | | | | |
+| **Average** | 0.3196 | **0.3529** | 0.3263 | **E2** |
+
+E2 wins 8 out of 9 benchmarks. The gains are consistent across task types: commonsense reasoning (hellaswag, piqa), science knowledge (arc_easy), reading comprehension (squad, coqa), and coreference resolution (winogrande) all improve.
+
+### Validation Loss
+
+![Validation BPB curves for E1, E2, and E3](/val_bpb.png)
+
+Despite performing better on downstream benchmarks, E2 achieves **slightly worse** validation BPB (bits per byte) than the baseline. This is a curious finding. It suggests that drop-loss trades off some raw next-token prediction ability on the general validation distribution in exchange for learning more "useful" internal representations — the kind that help on reasoning and knowledge benchmarks.
+
+This makes intuitive sense: by deprioritizing the hardest tokens early in training, the model may be spending less capacity memorizing noisy or rare patterns and more capacity building robust features. The validation loss measures everything equally, but downstream benchmarks reward the kind of structured knowledge that drop-loss seems to encourage.
+
+### Ablation
+
+E3 (random token dropping) is the key control experiment. It uses the exact same schedule and drop percentage as E2, but drops tokens at random instead of targeting the highest-loss ones. The result: E3 performs only marginally better than the baseline, and the difference is within noise.
+
+This is important because it rules out a simpler explanation. One might argue that drop-loss works just because training on fewer tokens acts as a regularizer (similar to dropout). If that were the case, random dropping should help just as much. It doesn't. The benefit comes specifically from *which* tokens are dropped — the strategic exclusion of the hardest tokens is what matters.
+
+<a id="limitations" />
+
+## Limitations
+
+These results are promising but preliminary. Several important caveats:
+
+- **No repeated runs.** Each experiment was run once. Without multiple seeds, the possibility of lucky/unlucky initialization cannot be ruled out. However, E2's consistency across 8 of 9 benchmarks makes a pure noise explanation unlikely (p ~ 0.02 under a binomial test).
+- **Small scale only.** All experiments used a ~124M parameter model. Whether drop-loss helps at 1B+ parameters is unknown. Larger models may already handle noisy tokens better, or the effect may be amplified.
+- **One schedule tested.** The 10% start / 50% decay schedule was chosen based on intuition, not a sweep. Better schedules likely exist.
+- **One dataset.** All experiments used FineWeb. Data quality and noise levels vary across datasets, and drop-loss may interact with these properties differently.
+
+I would like to test this at larger scales, with multiple seeds, and with schedule sweeps. If you have the compute and find this interesting, feel free to reach out or fork the [repo](https://github.com/eliplutchok/nanochat-drop-loss).
+
+## Related Work
+
+I am placing this section at the end to respect the chronology of events. When I start with surveying related work I often find myself discouraged from pursuing ideas when I see similar (even if not identical) prior work. Therefore, for smaller projects like this one, I will sometimes first do the work and then do the research.
+
+The most closely related work is **loss truncation** by Kang and Hashimoto [3], which adaptively removes high-loss examples during training to optimize for distinguishability rather than log loss. The core operator is essentially the same as drop-loss: rank by loss, drop the top tail, zero out their contribution, backpropagate on the rest. They also note that losses are uninformative early in training and propose a "hotstart" phase before truncation begins — the same observation that motivated the warmup parameter in drop-loss. The key differences are that loss truncation operates at the example (sequence) level rather than the token level, is framed as robustness to noisy references in conditional NLG (summarization) rather than as a curriculum for pretraining, and acts as a persistent filter rather than a decaying schedule.
+
+Flores and Cohan [4] later extended loss truncation to finer granularity, studying word-level NLL specifically among entity tokens to reduce hallucination in summarization. Their work is relevant because it demonstrates the value of moving from example-level to token-level loss filtering which is exactly the direction drop-loss takes. However, their focus remains on factuality in finetuning rather than pretraining curriculum.
+
+Drop-loss differs from both primarily in context and intent: it is applied during pretraining from scratch, operates at the individual token level, and is designed as a temporary decaying curriculum (not a permanent filter) to help the model build foundations before tackling harder tokens.
+
+## Acknowledgements
+
+- [Andrej Karpathy](https://github.com/karpathy) for [nanochat](https://github.com/karpathy/nanochat), the excellent open-source LLM training codebase this experiment is built on.
+- [Lambda](https://lambda.ai/) for providing the free GPU credits (8x H100 node) used to run these experiments.
+
+## References
+
+[1] Y. Bengio, J. Louradour, R. Collobert, and J. Weston. "Curriculum Learning." *Proceedings of the 26th International Conference on Machine Learning (ICML)*, 2009.
+
+[2] E. Allgower and K. Georg. *Numerical Continuation Methods: An Introduction*. Springer-Verlag, 1990.
+
+[3] D. Kang and T. B. Hashimoto. "Improved Natural Language Generation via Loss Truncation." *Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics (ACL)*, pp. 718-731, 2020.
+
+[4] L. J. Flores and A. Cohan. "On the Benefits of Fine-Grained Loss Truncation: A Case Study on Factuality in Summarization." *Proceedings of the 18th Conference of the European Chapter of the Association for Computational Linguistics (EACL)*, Volume 2: Short Papers, pp. 138-150, 2024.

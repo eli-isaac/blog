@@ -32,11 +32,11 @@ const TEXT_MAX_FONT_SIZE = 400 // Cap on computed font size (px)
 const TEXT_FONT_WEIGHT = 400 // Lighter weight for thinner letter strokes
 
 // Node settings
-const NODE_COUNT_MOBILE = 450
+const NODE_COUNT_MOBILE = 350
 const NODE_COUNT_DESKTOP = 450
 const NODE_COUNT = window.innerWidth < 768 ? NODE_COUNT_MOBILE : NODE_COUNT_DESKTOP
-const NODE_MIN_RADIUS_MOBILE = 2
-const NODE_MAX_RADIUS_MOBILE = 3
+const NODE_MIN_RADIUS_MOBILE = 3
+const NODE_MAX_RADIUS_MOBILE = 4
 const NODE_MIN_RADIUS_DESKTOP = 4
 const NODE_MAX_RADIUS_DESKTOP = 7
 const NODE_MIN_RADIUS = window.innerWidth < 768 ? NODE_MIN_RADIUS_MOBILE : NODE_MIN_RADIUS_DESKTOP

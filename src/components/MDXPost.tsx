@@ -53,7 +53,60 @@ export const mdxComponents: MDXComponents = {
   li: ({ children }) => <li>{children}</li>,
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
-  
+  a: ({ href, children }: { href?: string; children?: ReactNode }) => (
+    <a
+      href={href}
+      target={href?.startsWith('#') ? undefined : '_blank'}
+      rel={href?.startsWith('#') ? undefined : 'noopener noreferrer'}
+      className="text-gray-700 underline decoration-gray-400 hover:decoration-gray-700 transition-colors"
+    >
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }: { children?: ReactNode }) => (
+    <blockquote className="border-l-4 border-gray-400 pl-4 my-6 text-gray-600 italic">
+      {children}
+    </blockquote>
+  ),
+  img: ({ src, alt }: { src?: string; alt?: string }) => (
+    <img src={src} alt={alt} className="w-full rounded-lg my-6" />
+  ),
+  table: ({ children }: { children?: ReactNode }) => (
+    <div className="overflow-x-auto my-6">
+      <table className="w-full text-sm text-left border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }: { children?: ReactNode }) => (
+    <thead className="border-b-2 border-gray-300">{children}</thead>
+  ),
+  tbody: ({ children }: { children?: ReactNode }) => <tbody>{children}</tbody>,
+  tr: ({ children }: { children?: ReactNode }) => (
+    <tr className="border-b border-gray-200">{children}</tr>
+  ),
+  th: ({ children }: { children?: ReactNode }) => (
+    <th className="py-2 pr-4 font-semibold text-gray-800">{children}</th>
+  ),
+  td: ({ children }: { children?: ReactNode }) => (
+    <td className="py-2 pr-4 text-gray-700">{children}</td>
+  ),
+  pre: ({ children }: { children?: ReactNode }) => (
+    <pre className="bg-gray-800 text-gray-100 rounded-lg p-4 my-6 overflow-x-auto text-sm leading-relaxed">
+      {children}
+    </pre>
+  ),
+  code: ({ children, className }: { children?: ReactNode; className?: string }) => {
+    // If className exists, it's a code block (inside <pre>) — render as-is
+    if (className) {
+      return <code className={className}>{children}</code>
+    }
+    // Otherwise it's inline code
+    return (
+      <code className="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono">
+        {children}
+      </code>
+    )
+  },
+
   // Custom components for interactive elements
   ActivationGraph,
   NeuralNetworkDemo,
