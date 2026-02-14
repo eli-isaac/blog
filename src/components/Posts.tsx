@@ -36,7 +36,7 @@ export default function Posts() {
   const highlight = getHighlightStyle()
 
   return (
-    <div className="pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
+    <div className="pt-12 md:pt-24 max-w-xl px-6 mx-auto md:mx-0 md:ml-[20%] md:px-0">
         <ul ref={listRef} className="relative">
           {/* Single sliding highlight background */}
           <AnimatePresence>

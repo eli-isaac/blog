@@ -13,7 +13,9 @@ const BACKGROUND_COLOR = '#efefe2'
 const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margin
 const MAX_CONSTRUCT_RADIUS = 250 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.05 // Fraction of construct radius nodes start in
-const SPHERE_DURATION = 14 // Seconds nodes bounce inside the sphere
+const SPHERE_DURATION_MOBILE = 6
+const SPHERE_DURATION_DESKTOP = 14
+const SPHERE_DURATION = window.innerWidth < 768 ? SPHERE_DURATION_MOBILE : SPHERE_DURATION_DESKTOP
 const EXPANSION_DURATION = 5 // Seconds for sphere boundary to expand to full screen
 const SCATTER_DURATION = 7 // Seconds nodes float freely before text forms
 const TEXT_FORMATION_DURATION = 7 // Seconds for nodes to lerp into text positions
@@ -69,7 +71,9 @@ const HOVER_OPACITY_REDUCTION = 0.5 // How much opacity drops near cursor (0 = n
 const SPEED_RECOVERY_RATE = 0.0005 // How fast nodes return to original speed after perturbation (0–1)
 
 // Connection settings
-const CONNECTION_DISTANCE = 250
+const CONNECTION_DISTANCE_MOBILE = 120
+const CONNECTION_DISTANCE_DESKTOP = 250
+const CONNECTION_DISTANCE = window.innerWidth < 768 ? CONNECTION_DISTANCE_MOBILE : CONNECTION_DISTANCE_DESKTOP
 const CONNECTION_PROBABILITY = 0.08 // Probability a valid pair is connected (0–1)
 const CONNECTION_OPACITY = 0.13
 const CONNECTION_LINE_WIDTH = .8

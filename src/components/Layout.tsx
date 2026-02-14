@@ -36,7 +36,7 @@ export default function Layout() {
   const showBackground = location.pathname.startsWith('/posts') || location.pathname.startsWith('/about')
 
   return (
-    <div className="relative min-h-screen md:flex" style={{ backgroundColor: '#efefe2' }}>
+    <div className="relative min-h-dvh md:flex" style={{ backgroundColor: '#efefe2' }}>
       {/* Mobile toggle button */}
       <button 
         onClick={toggle}
@@ -59,7 +59,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed md:sticky top-0 left-0 h-screen z-40
+          fixed md:sticky top-0 left-0 h-dvh z-40
           ${sidebarConfig.bgClass} border-l border-r border-stone-300/60 w-64 p-6 overflow-hidden
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
