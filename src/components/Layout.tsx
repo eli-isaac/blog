@@ -1,7 +1,23 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useSidebar } from '../context/SidebarContext'
-import PostsBackground, { SIDEBAR_THEMES } from './PostsBackground'
+import SidebarBackground, { SIDEBAR_THEMES, SidebarPortalConfig } from './SidebarBackground'
+
+// Portal nodes that float in the sidebar
+const SIDEBAR_PORTALS: SidebarPortalConfig[] = [
+  {
+    id: 'posts',
+    path: '/posts',
+    color: '160, 80, 80',
+    label: 'Blog Posts',
+  },
+  {
+    id: 'about',
+    path: '/about',
+    color: '80, 110, 90',
+    label: 'About',
+  },
+]
 
 // Sidebar configuration per section
 const SIDEBAR_CONFIG = {
@@ -13,7 +29,7 @@ const SIDEBAR_CONFIG = {
   about: {
     bgClass: 'border-stone-200/60',
     bgStyle: { background: '#efefe2' },
-    theme: SIDEBAR_THEMES.projects,
+    theme: SIDEBAR_THEMES.about,
   },
   default: {
     bgClass: 'border-stone-200/60',
@@ -28,12 +44,19 @@ function getSidebarConfig(pathname: string) {
   return SIDEBAR_CONFIG.default
 }
 
+function getActivePortalId(pathname: string): string | undefined {
+  if (pathname.startsWith('/posts')) return 'posts'
+  if (pathname.startsWith('/about')) return 'about'
+  return undefined
+}
+
 export default function Layout() {
   const { isOpen, toggle, close } = useSidebar()
   const location = useLocation()
 
   const sidebarConfig = getSidebarConfig(location.pathname)
   const showBackground = location.pathname.startsWith('/posts') || location.pathname.startsWith('/about')
+  const activePortalId = getActivePortalId(location.pathname)
 
   return (
     <div className="relative min-h-dvh md:flex" style={{ backgroundColor: '#efefe2' }}>
@@ -67,8 +90,14 @@ export default function Layout() {
         `}
         style={sidebarConfig.bgStyle}
       >
-        {/* Neural network background */}
-        {showBackground && <PostsBackground theme={sidebarConfig.theme} />}
+        {/* Animated sidebar background with portal nodes */}
+        {showBackground && (
+          <SidebarBackground
+            theme={sidebarConfig.theme}
+            portals={SIDEBAR_PORTALS}
+            activePortalId={activePortalId}
+          />
+        )}
         
         {/* Arrowsmith text at bottom */}
         <Link to="/" className="absolute bottom-6 left-6 z-10 no-underline hover:opacity-80 transition-opacity">

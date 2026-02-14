@@ -6,7 +6,7 @@ import { PostPreview } from './PostPreview'
 
 const previewBg = '#e5e5d3'
 
-export default function Posts() {
+export default function PostsList() {
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
   const navigate = useNavigate()
 

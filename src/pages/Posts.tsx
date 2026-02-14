@@ -1,4 +1,4 @@
-import PostsList from '../components/Posts'
+import PostsList from '../components/PostsList'
 import useDocumentMeta from '../hooks/useDocumentMeta'
 
 export default function Posts() {
