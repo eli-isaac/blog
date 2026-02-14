@@ -42,8 +42,8 @@ const NODE_MAX_RADIUS_DESKTOP = 7
 const NODE_MIN_RADIUS = window.innerWidth < 768 ? NODE_MIN_RADIUS_MOBILE : NODE_MIN_RADIUS_DESKTOP
 const NODE_MAX_RADIUS = window.innerWidth < 768 ? NODE_MAX_RADIUS_MOBILE : NODE_MAX_RADIUS_DESKTOP
 const NODE_OPACITY = 0.7
-const NODE_MIN_SHADE = 140 // Darker grey
-const NODE_MAX_SHADE = 210 // Lighter grey
+const NODE_MIN_SHADE = 90 // Darker grey
+const NODE_MAX_SHADE = 160 // Lighter grey
 
 // Movement settings
 const NODE_SPEED_MOBILE = 0.45
