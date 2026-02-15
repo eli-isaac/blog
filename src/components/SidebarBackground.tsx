@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
 // =============================================================================
 // CONFIGURATION
@@ -50,6 +52,12 @@ const PORTAL_GLOW_RADIUS = 1.6
 const PORTAL_GLOW_OPACITY = 0.1
 const PORTAL_HOVER_GLOW_OPACITY = 0.22
 const PORTAL_HIT_RADIUS = 2.5            // Multiplier for click/hover detection
+
+// Flying animation (portal click → navigate)
+const NAVIGATION_DELAY = 700              // ms before navigating after portal click
+const FLYING_CIRCLE_SIZE = 14             // Diameter of the flying circle (px)
+const FLYING_CIRCLE_SCALE = 2             // Scale-up while flying
+const COLOR_LINE_HEIGHT = 3               // Height of the top color sweep line (px)
 
 // =============================================================================
 // TYPES
@@ -150,12 +158,19 @@ export default function SidebarBackground({
   const portalNodesRef = useRef<PortalNode[]>([])
   const animationRef = useRef<number>(0)
   const hoveredPortalRef = useRef<string | null>(null)
+  const flyingPortalIdRef = useRef<string | null>(null)
   const navigate = useNavigate()
 
   const [hoveredPortal, setHoveredPortal] = useState<{
     label: string
     x: number
     y: number
+  } | null>(null)
+
+  const [flyingPortal, setFlyingPortal] = useState<{
+    config: SidebarPortalConfig
+    screenX: number   // Viewport-relative coordinates for the fixed-position animation
+    screenY: number
   } | null>(null)
 
   // --- Event handlers (stable refs via useCallback) ---
@@ -171,7 +186,28 @@ export default function SidebarBackground({
       const dx = portal.x - x
       const dy = portal.y - y
       if (Math.sqrt(dx * dx + dy * dy) < portal.radius * PORTAL_HIT_RADIUS) {
-        navigate(portal.config.path)
+        // Convert canvas-local position to viewport coordinates
+        const screenX = rect.left + portal.x
+        const screenY = rect.top + portal.y
+
+        // Clear any previous flying state so the animation re-triggers cleanly
+        flyingPortalIdRef.current = null
+        setFlyingPortal(null)
+        setHoveredPortal(null)
+
+        // Use a microtask to ensure React flushes the null state before setting the new one,
+        // so Framer Motion sees a fresh mount and replays the animation
+        requestAnimationFrame(() => {
+          flyingPortalIdRef.current = portal.config.id
+          setFlyingPortal({ config: portal.config, screenX, screenY })
+
+          setTimeout(() => {
+            navigate(portal.config.path)
+            // Clean up after navigation so the next click starts fresh
+            flyingPortalIdRef.current = null
+            setFlyingPortal(null)
+          }, NAVIGATION_DELAY)
+        })
         return
       }
     }
@@ -399,6 +435,9 @@ export default function SidebarBackground({
 
       // --- Update & draw portal nodes ---
       for (const portal of portalNodes) {
+        // Skip drawing if this portal is currently flying off-screen
+        if (flyingPortalIdRef.current === portal.config.id) continue
+
         portal.x += portal.vx
         portal.y += portal.vy
 
@@ -451,21 +490,74 @@ export default function SidebarBackground({
   }, [theme, portals, activePortalId, handleCanvasClick, handleCanvasMove, handleCanvasLeave])
 
   return (
-    <div ref={containerRef} className="absolute inset-0 z-0">
-      <canvas ref={canvasRef} className="absolute inset-0" />
-      {hoveredPortal && (
-        <div
-          className="absolute z-10 pointer-events-none text-xs font-medium whitespace-nowrap"
-          style={{
-            left: hoveredPortal.x,
-            top: hoveredPortal.y - 20,
-            transform: 'translateX(-50%)',
-            color: 'rgba(140, 140, 130, 0.9)',
-          }}
-        >
-          {hoveredPortal.label}
-        </div>
+    <>
+      <div ref={containerRef} className="absolute inset-0 z-0">
+        <canvas ref={canvasRef} className="absolute inset-0" />
+        {hoveredPortal && !flyingPortal && (
+          <div
+            className="absolute z-10 pointer-events-none text-xs font-medium whitespace-nowrap"
+            style={{
+              left: hoveredPortal.x,
+              top: hoveredPortal.y - 20,
+              transform: 'translateX(-50%)',
+              color: 'rgba(140, 140, 130, 0.9)',
+            }}
+          >
+            {hoveredPortal.label}
+          </div>
+        )}
+      </div>
+
+      {/* Flying animation — rendered at document.body via portal to escape sidebar overflow:hidden */}
+      {flyingPortal && createPortal(
+        <>
+          {/* Circle flies from portal position to top of viewport */}
+          <motion.div
+            className="fixed z-50 rounded-full pointer-events-none"
+            style={{
+              backgroundColor: `rgb(${flyingPortal.config.color})`,
+              width: FLYING_CIRCLE_SIZE,
+              height: FLYING_CIRCLE_SIZE,
+            }}
+            initial={{
+              left: flyingPortal.screenX,
+              top: flyingPortal.screenY,
+              x: '-50%',
+              y: '-50%',
+              scale: 1,
+              opacity: 1,
+            }}
+            animate={{
+              left: flyingPortal.screenX,
+              top: -50,
+              x: '-50%',
+              y: '-50%',
+              scale: FLYING_CIRCLE_SCALE,
+              opacity: 1,
+            }}
+            transition={{
+              duration: 0.5,
+              ease: [0.25, 0, 0.2, 1],
+            }}
+          />
+          {/* Color line sweeps across the top of the viewport */}
+          <motion.div
+            className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
+            style={{
+              height: COLOR_LINE_HEIGHT,
+              backgroundColor: `rgb(${flyingPortal.config.color})`,
+              transformOrigin: `${flyingPortal.screenX}px center`,
+            }}
+            initial={{ scaleX: (FLYING_CIRCLE_SIZE * 3) / window.innerWidth, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: 1 }}
+            transition={{
+              scaleX: { delay: 0.28, duration: 0.6, ease: [0.4, 0, 0.2, 1] },
+              opacity: { delay: 0.28, duration: 0 },
+            }}
+          />
+        </>,
+        document.body,
       )}
-    </div>
+    </>
   )
 }
