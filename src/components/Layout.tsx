@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { useSidebar } from '../context/SidebarContext'
 import SidebarBackground, { SIDEBAR_THEMES, SidebarPortalConfig } from './SidebarBackground'
+import Breadcrumbs from './Breadcrumbs'
 
 // Portal nodes that float in the sidebar
 const SIDEBAR_PORTALS: SidebarPortalConfig[] = [
@@ -98,22 +98,21 @@ export default function Layout() {
             activePortalId={activePortalId}
           />
         )}
-        
-        {/* Arrowsmith text at bottom */}
-        <Link to="/" className="absolute bottom-6 left-6 z-10 no-underline hover:opacity-80 transition-opacity">
-          <motion.span
-            layoutId="arrowsmith-title"
-            className="text-3xl font-medium block"
-            style={{ color: '#c9c9b8' }}
-            transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-          >
-            Arrowsmith
-          </motion.span>
-        </Link>
       </aside>
+
+      {/* Breadcrumbs — fixed, bottom-left, outside sidebar */}
+      <Breadcrumbs />
 
       {/* Main content */}
       <main className="relative z-10 flex-1 pt-16 md:pt-6 px-6">
+        {/* Logo — scrolls with content */}
+        <Link to="/" className="hidden md:block pl-2 pt-1">
+          <img
+            src="/arrowsmith.png"
+            alt="Arrowsmith — go to homepage"
+            className="w-8 h-8 opacity-50 hover:opacity-80 transition-opacity"
+          />
+        </Link>
         <Outlet />
       </main>
     </div>
