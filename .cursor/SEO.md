@@ -253,6 +253,41 @@ New blog posts are automatically included — no manual sitemap maintenance need
 
 ---
 
+## AI Agent Accessibility (llms.txt)
+
+The site is a JavaScript SPA, so AI agents that do simple HTTP fetches (without executing JS) would see an empty `<div id="root"></div>` instead of article content. To solve this, the build script generates plain-text-friendly files:
+
+### `dist/llms.txt` — Site Index for AI Agents
+
+Auto-generated at build time. Lives at `https://arrowsmith.ai/llms.txt`. Contains:
+- Site name, description, and authors
+- Instructions explaining that the site is a JS SPA and how to read articles
+- A list of all articles with title, authors, date, and a direct link to the markdown version
+
+This follows the emerging `llms.txt` convention (similar to `robots.txt` but designed for LLMs).
+
+### `dist/posts/<slug>/content.md` — Per-Article Markdown
+
+Auto-generated at build time for each post. Contains the full article text in clean markdown:
+- JSX components (interactive demos, graphs) are stripped out
+- `<Cite>` components are converted to `[Author, Year](url)` markdown links
+- Image paths are converted to absolute URLs
+- Math (LaTeX) is preserved as-is (LLMs understand `$$...$$` notation)
+- A clean header with title, subtitle, authors, date, and URL is prepended
+
+**Key design decision:** Articles are available individually at `/posts/<slug>/content.md` rather than bundled into a single file. This lets AI agents fetch only the articles they're interested in, rather than downloading the entire blog at once.
+
+### How It Works for an AI Agent
+
+1. Agent fetches `https://arrowsmith.ai/llms.txt`
+2. Sees the list of articles with descriptions
+3. Fetches `https://arrowsmith.ai/posts/drop-loss/content.md` to read a specific article
+4. Gets clean, complete markdown — no JS execution needed
+
+New posts are automatically included — the build script discovers all MDX files.
+
+---
+
 ## Checklist: What to Update When...
 
 ### Adding a new blog post

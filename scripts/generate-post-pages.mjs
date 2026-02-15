@@ -2,7 +2,9 @@
  * Post-build script — runs after `vite build`.
  *
  * 1. Generates per-post HTML files with correct OG meta tags + Article JSON-LD
- * 2. Generates sitemap.xml
+ * 2. Generates per-post content.md files (plain markdown for AI agents)
+ * 3. Generates sitemap.xml
+ * 4. Generates llms.txt (site index for AI agents)
  *
  * Social media crawlers don't execute JavaScript, so they never see the
  * dynamic meta tags set by useDocumentMeta in React. This script creates
@@ -19,23 +21,58 @@ const root = join(__dirname, '..')
 const siteUrl = 'https://arrowsmith.ai'
 
 // ---------------------------------------------------------------------------
-// 1. Extract post metadata from MDX files
+// 1. Extract post metadata + raw content from MDX files
 // ---------------------------------------------------------------------------
 const contentDir = join(root, 'src', 'content')
 const mdxFiles = readdirSync(contentDir).filter(f => f.endsWith('.mdx'))
 
 const posts = []
 for (const file of mdxFiles) {
-  const content = readFileSync(join(contentDir, file), 'utf-8')
-  const metaMatch = content.match(/export\s+const\s+meta\s*=\s*(\{[\s\S]*?\n\})/)
+  const raw = readFileSync(join(contentDir, file), 'utf-8')
+  const metaMatch = raw.match(/export\s+const\s+meta\s*=\s*(\{[\s\S]*?\n\})/)
   if (metaMatch) {
     try {
       const meta = new Function(`return ${metaMatch[1]}`)()
-      posts.push(meta)
+      posts.push({ ...meta, _raw: raw })
     } catch {
       console.warn(`  ⚠ Could not parse meta in ${file}, skipping`)
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: convert MDX source to clean readable markdown
+// ---------------------------------------------------------------------------
+function mdxToMarkdown(raw, meta) {
+  let md = raw
+    // Remove the export const meta = { ... } block
+    .replace(/export\s+const\s+meta\s*=\s*\{[\s\S]*?\n\}\s*/, '')
+    // Remove import statements
+    .replace(/^import\s+.*$/gm, '')
+    // Convert <Cite authors="X" year="Y" url="Z" /> to [X, Y](Z)
+    .replace(/<Cite\s+authors="([^"]+)"\s+year="([^"]+)"\s+url="([^"]+)"\s*\/>/g, '[$1, $2]($3)')
+    // Remove self-closing JSX component tags (e.g. <NeuralNetworkDemo />, <ActivationGraph ... />)
+    .replace(/^<[A-Z][A-Za-z]*\s[^>]*\/>\s*$/gm, '')
+    .replace(/^<[A-Z][A-Za-z]*\s*\/>\s*$/gm, '')
+    // Remove HTML anchor tags used for in-page linking (e.g. <a id="..." />)
+    .replace(/^<a\s+id="[^"]*"\s*\/>\s*$/gm, '')
+    // Convert relative image paths to absolute URLs
+    .replace(/!\[([^\]]*)\]\(\//g, `![$1](${siteUrl}/`)
+    // Clean up excessive blank lines (3+ → 2)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  // Build a header
+  const authors = meta.authors?.join(', ') || ''
+  const header = [
+    `# ${meta.title}`,
+    meta.subtitle ? `### ${meta.subtitle}` : '',
+    '',
+    [authors, meta.date].filter(Boolean).join(' — '),
+    `${siteUrl}/posts/${meta.slug}`,
+  ].filter(line => line !== '').join('\n')
+
+  return `${header}\n\n---\n\n${md}\n`
 }
 
 // ---------------------------------------------------------------------------
@@ -74,19 +111,15 @@ for (const post of posts) {
   })
 
   const html = indexHtml
-    // <title>
     .replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`)
-    // Canonical
     .replace(
       /(<link rel="canonical" href=").*?(")/,
       `$1${postUrl}$2`
     )
-    // Meta description
     .replace(
       /(<meta name="description" content=").*?(")/,
       `$1${fullDesc}$2`
     )
-    // OG tags
     .replace(
       /(<meta property="og:type" content=").*?(")/,
       `$1article$2`
@@ -103,7 +136,6 @@ for (const post of posts) {
       /(<meta property="og:url" content=").*?(")/,
       `$1${postUrl}$2`
     )
-    // Twitter Card tags
     .replace(
       /(<meta name="twitter:title" content=").*?(")/,
       `$1${pageTitle}$2`
@@ -112,7 +144,6 @@ for (const post of posts) {
       /(<meta name="twitter:description" content=").*?(")/,
       `$1${fullDesc}$2`
     )
-    // Replace the WebSite JSON-LD with Article JSON-LD
     .replace(
       /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
       `<script type="application/ld+json">${jsonLd}</script>`
@@ -121,6 +152,10 @@ for (const post of posts) {
   const dir = join(root, 'dist', 'posts', post.slug)
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'index.html'), html)
+
+  // Write clean markdown version for AI agents
+  writeFileSync(join(dir, 'content.md'), mdxToMarkdown(post._raw, post))
+
   console.log(`  ✓ /posts/${post.slug}/`)
 }
 
@@ -161,3 +196,53 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 
 writeFileSync(join(root, 'dist', 'sitemap.xml'), sitemap)
 console.log('Generated sitemap.xml')
+
+// ---------------------------------------------------------------------------
+// 5. Generate llms.txt
+// ---------------------------------------------------------------------------
+const sortedPosts = [...posts].sort((a, b) => b.date.localeCompare(a.date))
+
+const postEntries = sortedPosts.map(p => {
+  const authors = p.authors?.join(', ') || ''
+  return [
+    `- [${p.title}](${siteUrl}/posts/${p.slug}): ${p.subtitle || p.title}`,
+    `  - Authors: ${authors || 'Unknown'}`,
+    `  - Date: ${p.date}`,
+    `  - Full text (markdown): ${siteUrl}/posts/${p.slug}/content.md`,
+  ].join('\n')
+}).join('\n\n')
+
+const llmsTxt = `# Arrowsmith
+
+> Explanatory articles and novel ideas on machine learning, optimization, and philosophy.
+
+Site: ${siteUrl}
+Authors: Eli Plutchok, Isaac Trenk
+
+## About This File
+
+This file helps AI agents and LLMs navigate and read Arrowsmith content.
+The site is a JavaScript single-page app, so fetching HTML pages will not
+return article text. Use the markdown links below to read full articles.
+
+## How to Read Articles
+
+Each article has a plain markdown version at:
+  ${siteUrl}/posts/<slug>/content.md
+
+These files contain the complete article text in clean markdown (no JavaScript
+required). Fetch only the articles you need — do not download all of them at once.
+
+## Articles
+
+${postEntries}
+
+## Other Pages
+
+- [All Posts](${siteUrl}/posts): Full list of articles
+- [About](${siteUrl}/about): About the blog and its authors
+- [Sitemap](${siteUrl}/sitemap.xml): XML sitemap for crawlers
+`
+
+writeFileSync(join(root, 'dist', 'llms.txt'), llmsTxt)
+console.log('Generated llms.txt')
