@@ -4,6 +4,7 @@ import PostPage from './PostPage'
 import ActivationGraph from './ActivationGraph'
 import NeuralNetworkDemo from './NeuralNetworkDemo'
 import useDocumentMeta from '../hooks/useDocumentMeta'
+import { postText } from '../config/posts'
 
 export interface PostMeta {
   title: string
@@ -32,23 +33,22 @@ function isBlockMath(children: ReactNode): boolean {
 export const mdxComponents: MDXComponents = {
   // Override default HTML elements with styled versions
   h2: ({ children }) => (
-    <h2 className="text-xl font-bold mt-12 mb-4">{children}</h2>
+    <h2 className={`text-xl font-bold mt-12 mb-4 ${postText.heading}`}>{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-lg font-semibold mt-8 mb-3">{children}</h3>
+    <h3 className={`text-lg font-semibold mt-8 mb-3 ${postText.heading}`}>{children}</h3>
   ),
   p: ({ children }) => {
-    // Center paragraphs that contain only block math
     if (isBlockMath(children)) {
       return <p className="text-center my-6">{children}</p>
     }
-    return <p className="text-gray-700 leading-relaxed mb-4">{children}</p>
+    return <p className={`${postText.body} leading-relaxed mb-4`}>{children}</p>
   },
   ul: ({ children }) => (
-    <ul className="list-disc list-inside text-gray-700 mb-4 space-y-1">{children}</ul>
+    <ul className={`list-disc list-inside ${postText.body} mb-4 space-y-1`}>{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal list-inside text-gray-700 mb-4 space-y-1">{children}</ol>
+    <ol className={`list-decimal list-inside ${postText.body} mb-4 space-y-1`}>{children}</ol>
   ),
   li: ({ children }) => <li>{children}</li>,
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
@@ -58,13 +58,13 @@ export const mdxComponents: MDXComponents = {
       href={href}
       target={href?.startsWith('#') ? undefined : '_blank'}
       rel={href?.startsWith('#') ? undefined : 'noopener noreferrer'}
-      className="text-gray-700 underline decoration-gray-400 hover:decoration-gray-700 transition-colors"
+      className={`${postText.body} underline decoration-gray-400 hover:decoration-gray-700 transition-colors`}
     >
       {children}
     </a>
   ),
   blockquote: ({ children }: { children?: ReactNode }) => (
-    <blockquote className="border-l-4 border-gray-400 pl-4 my-6 text-gray-600 italic">
+    <blockquote className={`border-l-4 border-gray-400 pl-4 my-6 ${postText.muted} italic`}>
       {children}
     </blockquote>
   ),
@@ -84,10 +84,10 @@ export const mdxComponents: MDXComponents = {
     <tr className="border-b border-gray-200">{children}</tr>
   ),
   th: ({ children }: { children?: ReactNode }) => (
-    <th className="py-2 pr-4 font-semibold text-gray-800">{children}</th>
+    <th className={`py-2 pr-4 font-semibold ${postText.tableHeader}`}>{children}</th>
   ),
   td: ({ children }: { children?: ReactNode }) => (
-    <td className="py-2 pr-4 text-gray-700">{children}</td>
+    <td className={`py-2 pr-4 ${postText.body}`}>{children}</td>
   ),
   pre: ({ children }: { children?: ReactNode }) => (
     <pre className="bg-gray-800 text-gray-100 rounded-lg p-4 my-6 overflow-x-auto text-sm leading-relaxed">

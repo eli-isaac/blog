@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useSidebar } from '../context/SidebarContext'
 import SidebarBackground, { SIDEBAR_THEMES, SidebarPortalConfig } from './SidebarBackground'
 import Breadcrumbs from './Breadcrumbs'
@@ -105,14 +105,6 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="relative z-10 flex-1 pt-16 md:pt-6 px-6">
-        {/* Logo — scrolls with content */}
-        <Link to="/" className="hidden md:block pl-2 pt-1">
-          <img
-            src="/arrowsmith.png"
-            alt="Arrowsmith — go to homepage"
-            className="w-8 h-8 opacity-50 hover:opacity-80 transition-opacity"
-          />
-        </Link>
         <Outlet />
       </main>
     </div>

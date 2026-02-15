@@ -33,6 +33,10 @@ const CONNECTION_OPACITY = 0.12
 const CONNECTION_LINE_WIDTH = 0.5
 const CONNECTION_COLOR = '170, 170, 170'
 
+// Wind-down settings — nodes slow to a stop after initial burst
+const WIND_DOWN_START = 10              // Seconds after mount when slowdown begins
+const WIND_DOWN_DURATION = 8            // Seconds over which speed decays from 1.0 → 0.0
+
 // Flash settings
 const FLASH_CHANCE = 0.01
 const FLASH_MIN_DURATION = 1000
@@ -351,8 +355,19 @@ export default function SidebarBackground({
         constructRadius = fullRadius
       }
 
-      // Random flashes
-      if (Math.random() < FLASH_CHANCE) {
+      // Speed multiplier: 1.0 during active phase, decays to 0.0 during wind-down
+      let speedMultiplier: number
+      if (elapsed < WIND_DOWN_START) {
+        speedMultiplier = 1.0
+      } else if (elapsed < WIND_DOWN_START + WIND_DOWN_DURATION) {
+        const t = (elapsed - WIND_DOWN_START) / WIND_DOWN_DURATION
+        speedMultiplier = 1.0 - easeOutCubic(t)
+      } else {
+        speedMultiplier = 0.0
+      }
+
+      // Random flashes (only while still moving)
+      if (speedMultiplier > 0 && Math.random() < FLASH_CHANCE) {
         const node = nodes[Math.floor(Math.random() * nodes.length)]
         node.flashTime = currentTime
         node.flashDuration =
@@ -395,8 +410,8 @@ export default function SidebarBackground({
 
       // --- Update & draw regular nodes ---
       for (const node of nodes) {
-        node.x += node.vx
-        node.y += node.vy
+        node.x += node.vx * speedMultiplier
+        node.y += node.vy * speedMultiplier
 
         // Bounce off spherical boundary
         const ndx = node.x - centerX
@@ -438,8 +453,8 @@ export default function SidebarBackground({
         // Skip drawing if this portal is currently flying off-screen
         if (flyingPortalIdRef.current === portal.config.id) continue
 
-        portal.x += portal.vx
-        portal.y += portal.vy
+        portal.x += portal.vx * speedMultiplier
+        portal.y += portal.vy * speedMultiplier
 
         // Bounce off spherical boundary
         const pdx = portal.x - centerX
