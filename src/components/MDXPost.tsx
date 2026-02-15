@@ -69,7 +69,7 @@ export const mdxComponents: MDXComponents = {
     </blockquote>
   ),
   img: ({ src, alt }: { src?: string; alt?: string }) => (
-    <img src={src} alt={alt} className="w-full rounded-lg my-6" />
+    <img src={src} alt={alt || ''} loading="lazy" className="w-full rounded-lg my-6" />
   ),
   table: ({ children }: { children?: ReactNode }) => (
     <div className="overflow-x-auto my-6">
@@ -137,7 +137,7 @@ export default function MDXPost({ meta, Content }: MDXPostProps) {
     title: meta.title,
     description: `${description}${authorStr ? ` — by ${authorStr}` : ''}`,
     ogType: 'article',
-    keywords: meta.title.toLowerCase().split(/\s+/).join(', '),
+    canonicalPath: `/posts/${meta.slug}`,
   })
 
   return (
