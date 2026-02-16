@@ -14,9 +14,9 @@ const CANVAS_MARGIN = 100 // Inset from screen edge; radius = min(w,h)/2 - margi
 const MAX_CONSTRUCT_RADIUS = 250 // Max radius of the construct circle (px)
 const SPAWN_RADIUS_RATIO = 0.05 // Fraction of construct radius nodes start in
 const SPHERE_DURATION_MOBILE = 6
-const SPHERE_DURATION_DESKTOP = 14
+const SPHERE_DURATION_DESKTOP = 8
 const SPHERE_DURATION = window.innerWidth < 768 ? SPHERE_DURATION_MOBILE : SPHERE_DURATION_DESKTOP
-const EXPANSION_DURATION = 5 // Seconds for sphere boundary to expand to full screen
+const EXPANSION_DURATION = 6 // Seconds for sphere boundary to expand to full screen
 const SCATTER_DURATION = 7 // Seconds nodes float freely before text forms
 const TEXT_FORMATION_DURATION = 7 // Seconds for nodes to lerp into text positions
 const FORMATION_STAGGER = 5 // Seconds over which node start times are spread
