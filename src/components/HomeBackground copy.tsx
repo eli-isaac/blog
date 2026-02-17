@@ -11,7 +11,7 @@ const BACKGROUND_COLOR = '#efefe2'
 
 // Timing
 const SPHERE_DURATION = window.innerWidth < 768 ? 6 : 8 // Seconds nodes bounce inside sphere
-const SCATTER_DURATION = 10         // Seconds nodes drift freely after sphere releases
+const SCATTER_DURATION = 7          // Seconds nodes drift freely after sphere releases
 const TEXT_START = SPHERE_DURATION + SCATTER_DURATION
 const TEXT_FORMATION_DURATION = 7   // Seconds for nodes to lerp into text positions
 const FORMATION_STAGGER = 5        // Seconds over which node start times are spread
@@ -35,7 +35,7 @@ const SPAWN_RADIUS_RATIO = 0.05    // Fraction of sphere radius nodes start in
 const BOUNCE_ANGLE_SPREAD = Math.PI // ±90° randomness on sphere bounce
 
 // Nodes
-const NODE_COUNT = window.innerWidth < 768 ? 350 : 600
+const NODE_COUNT = window.innerWidth < 768 ? 350 : 450
 const NODE_MIN_RADIUS = window.innerWidth < 768 ? 3 : 4
 const NODE_MAX_RADIUS = window.innerWidth < 768 ? 4 : 7
 const NODE_OPACITY = 0.7
@@ -46,9 +46,9 @@ const NODE_SPEED_MIN_MULTIPLIER = 0.3
 const NODE_SPEED_MAX_MULTIPLIER = 2.8
 
 // Portals
-const PORTAL_RADIUS = 10
+const PORTAL_RADIUS = 8
 const PORTAL_SPEED_MULTIPLIER = 0.5
-const PORTAL_OPACITY = 0.75
+const PORTAL_OPACITY = 0.65
 const PORTAL_HOVER_OPACITY = 1
 const PORTAL_GLOW_OPACITY = 0.12
 const PORTAL_HOVER_GLOW_OPACITY = 0.25
@@ -57,12 +57,10 @@ const PORTAL_HIT_RADIUS_MULTIPLIER = 2.5
 
 // Connections
 const CONNECTION_DISTANCE = window.innerWidth < 768 ? 120 : 250
-const CONNECTION_DISTANCE_SQ = CONNECTION_DISTANCE * CONNECTION_DISTANCE
 const CONNECTION_PROBABILITY = 0.08
 const CONNECTION_OPACITY = 0.13
-const CONNECTION_LINE_WIDTH = 1
+const CONNECTION_LINE_WIDTH = 0.8
 const CONNECTION_COLOR = '100, 100, 100'
-const CONNECTION_OPACITY_BANDS = 10 // Number of opacity buckets for batched drawing
 
 // Edge vignette
 const EDGE_SHADOW_SIZE = 200
@@ -78,27 +76,27 @@ const COLOR_LINE_HEIGHT = 3
 // HELPERS
 // =============================================================================
 
-/** Pre-render a sphere node to an offscreen canvas for fast per-frame blitting. */
-function createNodeBitmap(radius: number, color: string, opacity: number): HTMLCanvasElement {
-  const size = Math.ceil(radius) * 2 + 2
-  const bmp = document.createElement('canvas')
-  bmp.width = size
-  bmp.height = size
-  const ctx = bmp.getContext('2d')!
-  const cx = size / 2
-  const cy = size / 2
-  const grad = ctx.createRadialGradient(
-    cx - radius * 0.01, cy - radius * 0.01, radius * 0.05,
-    cx, cy, radius,
+function drawSphereNode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  opacity: number,
+) {
+  const highlightX = x - radius * 0.01
+  const highlightY = y - radius * 0.01
+  const gradient = ctx.createRadialGradient(
+    highlightX, highlightY, radius * 0.05,
+    x, y, radius,
   )
-  grad.addColorStop(0, `rgba(${color}, ${Math.min(opacity * 1.15, 1)})`)
-  grad.addColorStop(0.5, `rgba(${color}, ${opacity})`)
-  grad.addColorStop(1, `rgba(${color}, ${opacity * 0.15})`)
+  gradient.addColorStop(0, `rgba(${color}, ${Math.min(opacity * 1.15, 1)})`)
+  gradient.addColorStop(0.5, `rgba(${color}, ${opacity})`)
+  gradient.addColorStop(1, `rgba(${color}, ${opacity * 0.15})`)
   ctx.beginPath()
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-  ctx.fillStyle = grad
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.fillStyle = gradient
   ctx.fill()
-  return bmp
 }
 
 function sampleTextPositions(
@@ -124,7 +122,6 @@ function sampleTextPositions(
   offCtx.textAlign = 'center'
   offCtx.textBaseline = 'middle'
   offCtx.fillStyle = 'black'
-  offCtx.letterSpacing = '0.15em'
   offCtx.fillText(text, canvasWidth / 2, canvasHeight / 2)
 
   const pixels = offCtx.getImageData(0, 0, canvasWidth, canvasHeight).data
@@ -166,9 +163,8 @@ interface Node {
   vx: number
   vy: number
   radius: number
+  opacity: number
   color: string
-  bitmap: HTMLCanvasElement
-  bitmapHalf: number
   targetX?: number
   targetY?: number
   formStartX?: number
@@ -180,15 +176,6 @@ interface Node {
 
 interface PortalNode extends Node {
   config: PortalConfig
-  bitmapHovered: HTMLCanvasElement
-  glowBitmap: HTMLCanvasElement
-  glowBitmapHovered: HTMLCanvasElement
-  glowHalf: number
-}
-
-interface Connection {
-  a: Node
-  b: Node
 }
 
 // =============================================================================
@@ -275,10 +262,6 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
       (Math.random() - 0.5) * NODE_SPEED *
       (NODE_SPEED_MIN_MULTIPLIER + Math.random() * (NODE_SPEED_MAX_MULTIPLIER - NODE_SPEED_MIN_MULTIPLIER))
 
-    const drawNode = (node: Node) => {
-      ctx.drawImage(node.bitmap, node.x - node.bitmapHalf, node.y - node.bitmapHalf)
-    }
-
     // ── Create nodes ──────────────────────────────────────────────────────
 
     const nodes: Node[] = []
@@ -286,18 +269,14 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
       const angle = Math.random() * Math.PI * 2
       const r = Math.sqrt(Math.random()) * spawnRadius
       const shade = Math.round(NODE_MIN_SHADE + Math.random() * (NODE_MAX_SHADE - NODE_MIN_SHADE))
-      const color = `${shade}, ${shade}, ${shade}`
-      const nodeRadius = NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS)
-      const bmp = createNodeBitmap(nodeRadius, color, NODE_OPACITY)
       nodes.push({
         x: centerX + Math.cos(angle) * r,
         y: centerY + Math.sin(angle) * r,
         vx: randomSpeed(),
         vy: randomSpeed(),
-        radius: nodeRadius,
-        color,
-        bitmap: bmp,
-        bitmapHalf: bmp.width / 2,
+        radius: NODE_MIN_RADIUS + Math.random() * (NODE_MAX_RADIUS - NODE_MIN_RADIUS),
+        opacity: NODE_OPACITY,
+        color: `${shade}, ${shade}, ${shade}`,
         formDelay: Math.random() * FORMATION_STAGGER,
         wobblePhase: Math.random() * Math.PI * 2,
         wobbleFreq: 0.7 + Math.random() * 0.8,
@@ -310,27 +289,14 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
     const portalNodes: PortalNode[] = portals.map((config, i) => {
       const angle = (i / portals.length) * Math.PI * 2 + Math.PI / 4
       const r = Math.random() * spawnRadius
-      const portalR = config.radius ?? PORTAL_RADIUS
-      const glowR = portalR * PORTAL_GLOW_RADIUS_MULTIPLIER
-
-      const coreBmp = createNodeBitmap(portalR, config.color, PORTAL_OPACITY)
-      const coreBmpHov = createNodeBitmap(portalR, config.color, PORTAL_HOVER_OPACITY)
-      const glowBmp = createNodeBitmap(glowR, config.color, PORTAL_GLOW_OPACITY)
-      const glowBmpHov = createNodeBitmap(glowR, config.color, PORTAL_HOVER_GLOW_OPACITY)
-
       return {
         x: centerX + Math.cos(angle) * r,
         y: centerY + Math.sin(angle) * r,
         vx: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
         vy: (Math.random() - 0.5) * NODE_SPEED * PORTAL_SPEED_MULTIPLIER,
-        radius: portalR,
+        radius: config.radius ?? PORTAL_RADIUS,
+        opacity: 0.5,
         color: config.color,
-        bitmap: coreBmp,
-        bitmapHalf: coreBmp.width / 2,
-        bitmapHovered: coreBmpHov,
-        glowBitmap: glowBmp,
-        glowBitmapHovered: glowBmpHov,
-        glowHalf: glowBmp.width / 2,
         formDelay: Math.random() * FORMATION_STAGGER,
         wobblePhase: Math.random() * Math.PI * 2,
         wobbleFreq: 0.7 + Math.random() * 0.8,
@@ -339,16 +305,14 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
     })
     portalNodesRef.current = portalNodes
 
-    // ── Precompute connection pairs (adjacency list) ──────────────────────
-    // Only eligible pairs are stored — the animation loop iterates these
-    // directly instead of scanning all n² pairs with a Set lookup.
+    // ── Precompute connection pairs ───────────────────────────────────────
 
     const allNodes: Node[] = [...nodes, ...portalNodes]
-    const connections: Connection[] = []
+    const connectionEligible = new Set<string>()
     for (let i = 0; i < allNodes.length; i++) {
       for (let j = i + 1; j < allNodes.length; j++) {
         if (Math.random() < CONNECTION_PROBABILITY) {
-          connections.push({ a: allNodes[i], b: allNodes[j] })
+          connectionEligible.add(`${i}-${j}`)
         }
       }
     }
@@ -504,15 +468,14 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
           for (const node of nodes) {
             node.x = node.formStartX! + (centerX - node.formStartX!) * eased
             node.y = node.formStartY! + (centerY - node.formStartY!) * eased
-            drawNode(node)
+            drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
           }
           for (const portal of portalNodes) {
             if (flyingPortalIdRef.current === portal.config.id) continue
             portal.x = portal.formStartX! + (centerX - portal.formStartX!) * eased
             portal.y = portal.formStartY! + (centerY - portal.formStartY!) * eased
-            const core = hoveredPortalIdRef.current === portal.config.id
-              ? portal.bitmapHovered : portal.bitmap
-            ctx.drawImage(core, portal.x - portal.bitmapHalf, portal.y - portal.bitmapHalf)
+            const isHovered = hoveredPortalIdRef.current === portal.config.id
+            drawSphereNode(ctx, portal.x, portal.y, portal.radius, portal.config.color, isHovered ? PORTAL_HOVER_OPACITY : PORTAL_OPACITY)
           }
 
           animationRef.current = requestAnimationFrame(animate)
@@ -523,7 +486,6 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
       // ── Normal animation ────────────────────────────────────────────────
 
       const elapsed = (performance.now() - startTime) / 1000
-      const inSphere = elapsed < SPHERE_DURATION
       const forming = elapsed >= TEXT_START
 
       if (forming && !textTargetsComputed) {
@@ -531,8 +493,7 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
       }
 
       // ── Connections ─────────────────────────────────────────────────────
-      // Batch into Path2D opacity bands to minimize canvas state changes.
-      // One pass buckets lines by proximity, then 5 stroke calls draw them all.
+      // Fade out as text forms; skip entirely once fully faded.
 
       let connectionFade = 1
       if (forming && textTargetsComputed) {
@@ -541,41 +502,24 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
       }
 
       if (connectionFade > 0.001) {
-        // Build band paths and compute per-band opacity
-        const bandPaths: Path2D[] = []
-        const bandAlphas: number[] = []
-        for (let i = 0; i < CONNECTION_OPACITY_BANDS; i++) {
-          bandPaths.push(new Path2D())
-          // Mid-point of this band's squared-distance range, mapped to linear opacity
-          const midDistSq = (CONNECTION_OPACITY_BANDS - i - 0.5) / CONNECTION_OPACITY_BANDS
-          bandAlphas.push((1 - Math.sqrt(midDistSq)) * CONNECTION_OPACITY * connectionFade)
-        }
+        for (let i = 0; i < allNodes.length; i++) {
+          for (let j = i + 1; j < allNodes.length; j++) {
+            if (!connectionEligible.has(`${i}-${j}`)) continue
 
-        // Single pass: bucket each eligible pair into its opacity band
-        for (let k = 0; k < connections.length; k++) {
-          const { a, b } = connections[k]
-          const dx = a.x - b.x
-          const dy = a.y - b.y
-          const distSq = dx * dx + dy * dy
-          if (distSq >= CONNECTION_DISTANCE_SQ) continue
+            const dx = allNodes[i].x - allNodes[j].x
+            const dy = allNodes[i].y - allNodes[j].y
+            const distance = Math.sqrt(dx * dx + dy * dy)
+            if (distance >= CONNECTION_DISTANCE) continue
 
-          // Squared proximity (0 = at max distance, 1 = overlapping) for band assignment
-          const band = Math.min(
-            Math.floor((1 - distSq / CONNECTION_DISTANCE_SQ) * CONNECTION_OPACITY_BANDS),
-            CONNECTION_OPACITY_BANDS - 1,
-          )
-          bandPaths[band].moveTo(a.x, a.y)
-          bandPaths[band].lineTo(b.x, b.y)
+            const opacity = (1 - distance / CONNECTION_DISTANCE) * CONNECTION_OPACITY * connectionFade
+            ctx.beginPath()
+            ctx.moveTo(allNodes[i].x, allNodes[i].y)
+            ctx.lineTo(allNodes[j].x, allNodes[j].y)
+            ctx.strokeStyle = `rgba(${CONNECTION_COLOR}, ${opacity})`
+            ctx.lineWidth = CONNECTION_LINE_WIDTH
+            ctx.stroke()
+          }
         }
-
-        // Draw each band in one stroke call
-        ctx.lineWidth = CONNECTION_LINE_WIDTH
-        ctx.strokeStyle = `rgb(${CONNECTION_COLOR})`
-        for (let i = 0; i < CONNECTION_OPACITY_BANDS; i++) {
-          ctx.globalAlpha = bandAlphas[i]
-          ctx.stroke(bandPaths[i])
-        }
-        ctx.globalAlpha = 1
       }
 
       // ── Update & draw nodes ─────────────────────────────────────────────
@@ -587,16 +531,15 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
           ? Math.min((elapsed - nodeStart) / TEXT_FORMATION_DURATION, 1)
           : 0
 
-        // Drift phase: bounce off sphere or screen edges
+        // Drift phase: bounce off sphere during sphere phase, then screen edges
         if (textT === 0) {
           node.x += node.vx
           node.y += node.vy
-          if (inSphere) {
+          if (elapsed < SPHERE_DURATION) {
             bounceOffSphere(node)
-          } else {
-            clampToScreen(node)
           }
-          drawNode(node)
+          clampToScreen(node)
+          drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
           continue
         }
 
@@ -606,8 +549,7 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
           node.formStartY = node.y
         }
 
-        const inv = 1 - textT
-        const eased = 1 - inv * inv * inv // easeOutCubic
+        const eased = 1 - Math.pow(1 - textT, 3) // easeOutCubic
 
         // Wobble phase: formation complete, gentle oscillation around target
         if (textT >= 1) {
@@ -619,7 +561,7 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
           node.y = node.targetY!
             + Math.cos(elapsed * TEXT_WOBBLE_SPEED * f * 1.3 + p * 0.8) * TEXT_WOBBLE_RADIUS
             + Math.cos(elapsed * TEXT_WOBBLE_SPEED * f * 0.7 + p * 2.1) * TEXT_WOBBLE_RADIUS * 0.4
-          drawNode(node)
+          drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
           continue
         }
 
@@ -633,7 +575,7 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
         node.formStartY! += node.vy
         node.x = node.formStartX + (node.targetX! - node.formStartX) * eased
         node.y = node.formStartY! + (node.targetY! - node.formStartY!) * eased
-        drawNode(node)
+        drawSphereNode(ctx, node.x, node.y, node.radius, node.color, node.opacity)
       }
 
       // ── Update & draw portals ───────────────────────────────────────────
@@ -643,18 +585,17 @@ export default function HomeBackground({ portals }: { portals: PortalConfig[] })
 
         portal.x += portal.vx
         portal.y += portal.vy
-        if (inSphere) {
+        if (elapsed < SPHERE_DURATION) {
           bounceOffSphere(portal)
-        } else {
-          clampToScreen(portal)
         }
+        clampToScreen(portal)
 
         const isHovered = hoveredPortalIdRef.current === portal.config.id
-        const glow = isHovered ? portal.glowBitmapHovered : portal.glowBitmap
-        const core = isHovered ? portal.bitmapHovered : portal.bitmap
+        const coreOpacity = isHovered ? PORTAL_HOVER_OPACITY : PORTAL_OPACITY
+        const glowOpacity = isHovered ? PORTAL_HOVER_GLOW_OPACITY : PORTAL_GLOW_OPACITY
 
-        ctx.drawImage(glow, portal.x - portal.glowHalf, portal.y - portal.glowHalf)
-        ctx.drawImage(core, portal.x - portal.bitmapHalf, portal.y - portal.bitmapHalf)
+        drawSphereNode(ctx, portal.x, portal.y, portal.radius * PORTAL_GLOW_RADIUS_MULTIPLIER, portal.config.color, glowOpacity)
+        drawSphereNode(ctx, portal.x, portal.y, portal.radius, portal.config.color, coreOpacity)
       }
 
       animationRef.current = requestAnimationFrame(animate)
