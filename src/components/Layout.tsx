@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, Link } from 'react-router-dom'
 import { useSidebar } from '../context/SidebarContext'
 import SidebarBackground, { SIDEBAR_THEMES, SidebarPortalConfig } from './SidebarBackground'
 import Breadcrumbs from './Breadcrumbs'
@@ -98,6 +98,15 @@ export default function Layout() {
             activePortalId={activePortalId}
           />
         )}
+
+        {/* Mobile logo at bottom of sidebar */}
+        <Link
+          to="/"
+          onClick={close}
+          className="absolute bottom-6 left-6 right-6 md:hidden z-10"
+        >
+          <img src="/arrowsmith.png" alt="Arrowsmith" className="w-12 h-12 rounded-lg opacity-70 hover:opacity-100 transition-opacity" />
+        </Link>
       </aside>
 
       {/* Breadcrumbs — fixed, bottom-left, outside sidebar */}
