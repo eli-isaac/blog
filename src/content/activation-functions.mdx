@@ -6,31 +6,56 @@ export const meta = {
   slug: "activation-functions-in-neural-networks"
 }
 
-## Why do we need activation functions?
+***Activation functions are non-linear functions inserted between the layers of a neural network allowing it to learn complex patterns.***
 
-An activation function in the context of neural networks is a **non-linear** function typically applied right after a linear transformation. A single layer computes
+That sentence is quite dense so here are the relevant definitions:
 
-$$z = Wx + b, \quad a = \phi(z)$$
+- **Function.** A rule that takes an input and produces an output. Functions are often represented with symbols like $f$, so $f(x)$ means "apply the function $f$ to the input $x$." In neural networks, the symbol $\phi$ (the Greek letter "phi") is commonly used to denote an activation function, so $\phi(z)$ means "apply the activation function to $z$." Some examples:
+  - **$f(x) = x^2$**. Takes a number and returns its square. Input: $3$, output: $9$.
+  - **$f(x) = \text{uppercase}(x)$**. Takes a string and returns it in uppercase. Input: "hello", output: "HELLO".
+  - **$f(\mathbf{v}) = \|\mathbf{v}\|$**. Takes a vector and returns its length. Input: $[3, 4]$, output: $5$.
 
-where $W$ and $b$ define a linear map and $\phi$ is the activation function. The activation function is usually applied element-wise
+- **Linear function.** A function where each input contributes independently and changes in input produce a constant change in output. Some examples:
+  - **$f(x) = 3x + 2$**. Multiply by 3 and add 2. Increasing $x$ by 1 always increases the output by exactly 3, no matter what $x$ is.
+  - **$f(x_1, x_2) = 4x_1 - x_2 + 7$**. Each input is scaled and added. Changing $x_1$ by 1 always changes the output by 4, regardless of $x_2$.
+  - **$f(x) = x$**. The identity function. The output equals the input; the rate of change is always exactly 1.
 
-$$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
+- **Non-linear function.** A function where the rate of change can vary depending on the input, and inputs can interact with each other. Some examples:
+  - **$f(x) = x^2$**. The rate of change depends on $x$ itself. Near $x = 1$ a small increase barely changes the output, but near $x = 100$ the same increase produces a much larger change.
+  - **$f(x_1, x_2) = x_1 \cdot x_2$**. The two inputs interact. How much $x_1$ affects the output depends on the current value of $x_2$, and vice versa.
+  - **$f(x) = \max(0, x)$**. Outputs zero for any negative input and passes positive inputs unchanged. The behavior is fundamentally different on each side of zero.
 
-Why is non-linearity necessary? Without it, we can only represent linear functions. A linear function of two inputs $x_1$ and $x_2$ has the form
+- **Neural network.** A function that takes some input and produces an output. Rather than being defined all at once, it is composed of many similar sub-functions (called layers) chained together, where the output of one layer becomes the input to the next.
 
-$$f(x_1, x_2) = a x_1 + b x_2$$
+- **Single layer of a neural network.** Each layer is itself a function. It computes:
 
-Each input contributes independently, and changes in input produce a constant change in output. Increase $x_1$ by 1, and the output always changes by exactly $a$, regardless of the current values of $x_1$ or $x_2$.
+  $$z = Wx + b, \quad a = \phi(z)$$
 
-Linear functions are quite limited. They cannot
+  Here $x$ is the input to the layer, a vector (a list of numbers). $W$ is a **weight matrix** (a grid of numbers that linearly mixes the inputs), $b$ is a **bias vector** (a set of numbers added after the mixing to shift the result), and $\phi$ is the activation function. Together, $Wx + b$ is the linear part of the layer, and $\phi$ is the non-linear part.
 
-- have the rate of change vary as the input changes
-- have thresholds where something significant happens at the output
-- capture interactions between inputs, like $x_1 \cdot x_2$
+- **Activation function.** The non-linear function $\phi$ applied after the linear transformation in each layer. It is typically applied element-wise, meaning it operates on each value independently:
 
-When we add non-linear activation functions after linear layers, we can start doing more interesting things. A single linear layer followed by an activation function is still quite limited in what it can represent. But the key insight is that we can stack these layers. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, or even just two with enough neurons, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
+  $$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
 
-You might wonder why we can't just stack linear layers without activation functions. The problem is that composing linear functions produces another linear function. Consider two layers where the output of the first feeds into the second.
+  The left side feeds a whole list of values into $\phi$; the right side shows that $\phi$ is just applied to each element separately, producing a new list of the same size. For example, the **sigmoid** function is one common activation function:
+
+  $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+  To use it, substitute your input for $z$ on the right-hand side — for instance, $\sigma(3) = \frac{1}{1 + e^{-3}} \approx 0.95$. We'll see a graph of sigmoid and a deeper discussion of it later in this article.
+
+Ok, end of definitions.
+
+## Why is the non-linearity necessary?
+
+Without activation functions, we can only represent linear functions. Linear functions are quite limited.
+
+- They cannot have the rate of change vary as the input changes
+- They cannot have thresholds where something significant happens at the output
+- They cannot capture interactions between inputs, like $x_1 \cdot x_2$
+
+When we add non-linear activation functions after each linear layer, we can start doing these more interesting things that we just mentioned. And while a single layer is still quite limited, we can stack these layers to create ever more complex functions. Each layer applies a linear transformation followed by a non-linearity, and by composing many such layers, or even just two with enough neurons, we can approximate arbitrarily complex non-linear functions <Cite authors="Cybenko" year="1989" url="https://doi.org/10.1007/BF02551274" />.
+
+You might wonder why we can't just stack linear layers without activation functions. The problem is that composing linear functions always produces another linear function. Consider two layers where the output of the first feeds into the second.
 
 $$
 \begin{aligned}
@@ -44,7 +69,11 @@ where $W' = W_2 W_1$ and $b' = W_2 b_1 + b_2$. The two layers collapse into a si
 
 No matter how many layers you stack, the result is equivalent to a single linear transformation. Depth buys you nothing. The activation functions are what prevent this collapse. They ensure that each layer's contribution cannot be absorbed into the next, allowing the network to build up complex representations layer by layer.
 
+Here is an interactive demo of a small neural network where you can see how the activation function affects the output:
+
 <NeuralNetworkDemo />
+
+## A brief history of activation functions
 
 The earliest activation functions were inspired by biology. Over time, that motivation faded, and what mattered was the math. Here's how they evolved.
 

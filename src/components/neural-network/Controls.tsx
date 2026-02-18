@@ -17,7 +17,7 @@ export default function Controls() {
       <div className="flex gap-2 items-center">
         <button
           onClick={() => setIsTraining(!isTraining)}
-          className={`px-4 py-2 rounded text-sm font-medium ${
+          className={`px-4 py-2 rounded text-sm font-medium cursor-pointer ${
             isTraining 
               ? 'bg-amber-500 hover:bg-amber-600 text-white' 
               : 'bg-blue-500 hover:bg-blue-600 text-white'
@@ -27,7 +27,7 @@ export default function Controls() {
         </button>
         <button
           onClick={reset}
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm cursor-pointer"
         >
           Reset
         </button>
@@ -37,7 +37,9 @@ export default function Controls() {
         <select
           value={activation}
           onChange={(e) => setActivation(e.target.value as ActivationType)}
-          className="px-3 py-2 border rounded text-sm bg-white"
+          className="px-4 py-2.5 border border-gray-300 rounded-md text-sm bg-transparent cursor-pointer appearance-none pr-8 hover:border-gray-400 transition-colors"
+          title="Choose activation function"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
         >
           <option value="none">No activation (linear)</option>
           <option value="relu">ReLU</option>

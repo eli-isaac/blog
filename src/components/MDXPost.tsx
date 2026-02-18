@@ -45,12 +45,14 @@ export const mdxComponents: MDXComponents = {
     return <p className={`${postText.body} leading-relaxed mb-4`}>{children}</p>
   },
   ul: ({ children }) => (
-    <ul className={`list-disc list-inside ${postText.body} mb-4 space-y-1`}>{children}</ul>
+    <ul className={`list-disc pl-6 ${postText.body} mb-4 space-y-3`}>{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className={`list-decimal list-inside ${postText.body} mb-4 space-y-1`}>{children}</ol>
+    <ol className={`list-decimal pl-6 ${postText.body} mb-4 space-y-3`}>{children}</ol>
   ),
-  li: ({ children }) => <li>{children}</li>,
+  li: ({ children }) => (
+    <li className="[&>ul]:!mb-4 [&>ul]:mt-2 [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:!mb-4 [&>ol]:mt-2 [&>ol]:pl-6 [&>ol]:space-y-2 [&>p:last-child]:!mb-0">{children}</li>
+  ),
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
   a: ({ href, children }: { href?: string; children?: ReactNode }) => (

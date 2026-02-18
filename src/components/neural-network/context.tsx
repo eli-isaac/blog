@@ -48,7 +48,7 @@ interface NeuralNetworkProviderProps {
 
 export function NeuralNetworkProvider({ children }: NeuralNetworkProviderProps) {
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0)
-  const [activation, setActivation] = useState<ActivationType>('relu')
+  const [activation, setActivation] = useState<ActivationType>('none')
   const [isTraining, setIsTraining] = useState(false)
   const [tick, setTick] = useState(0)
   

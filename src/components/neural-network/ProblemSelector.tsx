@@ -10,7 +10,7 @@ function Arrow({ direction, onClick }: ArrowProps) {
   return (
     <button
       onClick={onClick}
-      className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+      className="p-2 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
       aria-label={direction === 'left' ? 'Previous problem' : 'Next problem'}
     >
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,6 +53,10 @@ export default function ProblemSelector({ children }: ProblemSelectorProps) {
       </div>
       
       {children}
+
+      <p className="text-xs text-gray-400 leading-relaxed mt-3 px-2">
+        {currentProblem.explanation}
+      </p>
     </div>
   )
 }

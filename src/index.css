@@ -22,6 +22,18 @@ h1, h2, h3, h4, h5, h6 {
   margin: 1.5rem 0;
 }
 
+/* Bold math inside <strong> wrappers */
+strong .katex .mord,
+strong .katex .mathnormal,
+strong .katex .mbin,
+strong .katex .mrel,
+strong .katex .mop,
+strong .katex .mopen,
+strong .katex .mclose,
+strong .katex .mpunct {
+  font-weight: bold !important;
+}
+
 /* Block math wrapper */
 .block-math {
   text-align: center;
