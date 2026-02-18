@@ -17,8 +17,8 @@ export default function PostHeader({ title, subtitle, date, authors, slug, size 
       <motion.h1 
         layoutId={slug ? `title-${slug}` : undefined}
         className={isLarge 
-          ? 'text-3xl font-bold mb-3 tracking-tight' 
-          : 'text-lg font-semibold tracking-tight'
+          ? 'text-3xl 2xl:text-4xl font-bold mb-3 tracking-tight' 
+          : 'text-lg 2xl:text-xl font-semibold tracking-tight'
         }
       >
         {title}
@@ -26,12 +26,12 @@ export default function PostHeader({ title, subtitle, date, authors, slug, size 
       {subtitle && (
         <motion.p 
           layoutId={slug ? `subtitle-${slug}` : undefined}
-          className={isLarge ? 'text-gray-500 text-lg' : 'text-gray-500 text-sm'}
+          className={isLarge ? 'text-gray-500 text-lg 2xl:text-xl' : 'text-gray-500 text-sm 2xl:text-base'}
         >
           {subtitle}
         </motion.p>
       )}
-      <div className={isLarge ? 'mt-3 flex items-center gap-2 text-sm' : 'mt-1 flex items-center gap-2 text-xs'}>
+      <div className={isLarge ? 'mt-3 flex items-center gap-2 text-sm 2xl:text-base' : 'mt-1 flex items-center gap-2 text-xs 2xl:text-sm'}>
         {authors && authors.length > 0 && (
           <motion.span 
             layoutId={slug ? `authors-${slug}` : undefined}

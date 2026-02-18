@@ -5,8 +5,8 @@ export const postLayout = {
   /** Max width class for the article container (Tailwind) */
   maxWidth: 'max-w-2xl',
 
-  /** Left margin on desktop (Tailwind arbitrary value) */
-  desktopMarginLeft: 'md:ml-[20%]',
+  /** Center content horizontally on desktop */
+  desktopCenter: 'mx-auto',
 
   /** Top padding: mobile / desktop */
   paddingTop: 'pt-12 md:pt-24',

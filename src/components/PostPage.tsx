@@ -17,7 +17,7 @@ export default function PostPage({ title, subtitle, date, authors, slug, childre
   return (
     <motion.article
       layoutId={slug ? `post-shell-${slug}` : undefined}
-      className={`${postLayout.paddingTop} ${postLayout.paddingBottom} ${postLayout.maxWidth} ${postLayout.mobilePaddingX} mx-auto md:mx-0 ${postLayout.desktopMarginLeft}`}
+      className={`${postLayout.paddingTop} ${postLayout.paddingBottom} ${postLayout.maxWidth} ${postLayout.mobilePaddingX} ${postLayout.desktopCenter}`}
     >
       <header className="mb-8">
         <PostHeader 

@@ -10,38 +10,53 @@ export const meta = {
 
 That sentence is quite dense so here are the relevant definitions:
 
-- **Function.** A rule that takes an input and produces an output. Functions are often represented with symbols like $f$, so $f(x)$ means "apply the function $f$ to the input $x$." In neural networks, the symbol $\phi$ (the Greek letter "phi") is commonly used to denote an activation function, so $\phi(z)$ means "apply the activation function to $z$." Some examples:
-  - **$f(x) = x^2$**. Takes a number and returns its square. Input: $3$, output: $9$.
-  - **$f(x) = \text{uppercase}(x)$**. Takes a string and returns it in uppercase. Input: "hello", output: "HELLO".
-  - **$f(\mathbf{v}) = \|\mathbf{v}\|$**. Takes a vector and returns its length. Input: $[3, 4]$, output: $5$.
+### Function
 
-- **Linear function.** A function where each input contributes independently and changes in input produce a constant change in output. Some examples:
-  - **$f(x) = 3x + 2$**. Multiply by 3 and add 2. Increasing $x$ by 1 always increases the output by exactly 3, no matter what $x$ is.
-  - **$f(x_1, x_2) = 4x_1 - x_2 + 7$**. Each input is scaled and added. Changing $x_1$ by 1 always changes the output by 4, regardless of $x_2$.
-  - **$f(x) = x$**. The identity function. The output equals the input; the rate of change is always exactly 1.
+A rule that takes an input and produces an output. Functions are often represented with symbols like $f$, so $f(x)$ means "apply the function $f$ to the input $x$." In neural networks, the symbol $\phi$ (the Greek letter "phi") is commonly used to denote an activation function, so $\phi(z)$ means "apply the activation function to $z$." Some examples:
 
-- **Non-linear function.** A function where the rate of change can vary depending on the input, and inputs can interact with each other. Some examples:
-  - **$f(x) = x^2$**. The rate of change depends on $x$ itself. Near $x = 1$ a small increase barely changes the output, but near $x = 100$ the same increase produces a much larger change.
-  - **$f(x_1, x_2) = x_1 \cdot x_2$**. The two inputs interact. How much $x_1$ affects the output depends on the current value of $x_2$, and vice versa.
-  - **$f(x) = \max(0, x)$**. Outputs zero for any negative input and passes positive inputs unchanged. The behavior is fundamentally different on each side of zero.
+- **$f(x) = x^2$**. Takes a number and returns its square. Input: $3$, output: $9$.
+- **$f(x) = \text{uppercase}(x)$**. Takes a string and returns it in uppercase. Input: "hello", output: "HELLO".
+- **$f(\mathbf{v}) = \|\mathbf{v}\|$**. Takes a vector and returns its length. Input: $[3, 4]$, output: $5$.
 
-- **Neural network.** A function that takes some input and produces an output. Rather than being defined all at once, it is composed of many similar sub-functions (called layers) chained together, where the output of one layer becomes the input to the next.
+### Linear function
 
-- **Single layer of a neural network.** Each layer is itself a function. It computes:
+A function where each input contributes independently and changes in input produce a constant change in output. Some examples:
 
-  $$z = Wx + b, \quad a = \phi(z)$$
+- **$f(x) = 3x + 2$**. Multiply by 3 and add 2. Increasing $x$ by 1 always increases the output by exactly 3, no matter what $x$ is.
+- **$f(x_1, x_2) = 4x_1 - x_2 + 7$**. Each input is scaled and added. Changing $x_1$ by 1 always changes the output by 4, regardless of $x_2$.
+- **$f(x) = x$**. The identity function. The output equals the input; the rate of change is always exactly 1.
 
-  Here $x$ is the input to the layer, a vector (a list of numbers). $W$ is a **weight matrix** (a grid of numbers that linearly mixes the inputs), $b$ is a **bias vector** (a set of numbers added after the mixing to shift the result), and $\phi$ is the activation function. Together, $Wx + b$ is the linear part of the layer, and $\phi$ is the non-linear part.
+### Non-linear function
 
-- **Activation function.** The non-linear function $\phi$ applied after the linear transformation in each layer. It is typically applied element-wise, meaning it operates on each value independently:
+A function where the rate of change can vary depending on the input, and inputs can interact with each other. Some examples:
 
-  $$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
+- **$f(x) = x^2$**. The rate of change depends on $x$ itself. Near $x = 1$ a small increase barely changes the output, but near $x = 100$ the same increase produces a much larger change.
+- **$f(x_1, x_2) = x_1 \cdot x_2$**. The two inputs interact. How much $x_1$ affects the output depends on the current value of $x_2$, and vice versa.
+- **$f(x) = \max(0, x)$**. Outputs zero for any negative input and passes positive inputs unchanged. The behavior is fundamentally different on each side of zero.
 
-  The left side feeds a whole list of values into $\phi$; the right side shows that $\phi$ is just applied to each element separately, producing a new list of the same size. For example, the **sigmoid** function is one common activation function:
+### Neural network
 
-  $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+A function that takes some input and produces an output. Rather than being defined all at once, it is composed of many similar sub-functions (called layers) chained together, where the output of one layer becomes the input to the next.
 
-  To use it, substitute your input for $z$ on the right-hand side — for instance, $\sigma(3) = \frac{1}{1 + e^{-3}} \approx 0.95$. We'll see a graph of sigmoid and a deeper discussion of it later in this article.
+### Single layer of a neural network
+
+Each layer is itself a function. It computes:
+
+$$z = Wx + b, \quad a = \phi(z)$$
+
+Here $x$ is the input to the layer, a vector (a list of numbers). $W$ is a **weight matrix** (a grid of numbers that linearly mixes the inputs), $b$ is a **bias vector** (a set of numbers added after the mixing to shift the result), and $\phi$ is the activation function. Together, $Wx + b$ is the linear part of the layer, and $\phi$ is the non-linear part.
+
+### Activation function
+
+The non-linear function $\phi$ applied after the linear transformation in each layer. It is typically applied element-wise, meaning it operates on each value independently:
+
+$$\phi([z_1, z_2, \ldots, z_n]) = [\phi(z_1), \phi(z_2), \ldots, \phi(z_n)]$$
+
+The left side feeds a whole list of values into $\phi$; the right side shows that $\phi$ is just applied to each element separately, producing a new list of the same size. For example, the **sigmoid** function is one common activation function:
+
+$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+To use it, substitute your input for $z$ on the right-hand side — for instance, $\sigma(3) = \frac{1}{1 + e^{-3}} \approx 0.95$. We'll see a graph of sigmoid and a deeper discussion of it later in this article.
 
 Ok, end of definitions.
 

@@ -33,22 +33,22 @@ function isBlockMath(children: ReactNode): boolean {
 export const mdxComponents: MDXComponents = {
   // Override default HTML elements with styled versions
   h2: ({ children }) => (
-    <h2 className={`text-xl font-bold mt-12 mb-4 ${postText.heading}`}>{children}</h2>
+    <h2 className={`text-xl 2xl:text-2xl font-bold mt-12 mb-4 ${postText.heading}`}>{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className={`text-lg font-semibold mt-8 mb-3 ${postText.heading}`}>{children}</h3>
+    <h3 className={`text-lg 2xl:text-xl font-semibold mt-8 mb-3 ${postText.heading}`}>{children}</h3>
   ),
   p: ({ children }) => {
     if (isBlockMath(children)) {
       return <p className="text-center my-6">{children}</p>
     }
-    return <p className={`${postText.body} leading-relaxed mb-4`}>{children}</p>
+    return <p className={`${postText.body} text-base 2xl:text-lg leading-[1.8] 2xl:leading-[1.85] mb-4`}>{children}</p>
   },
   ul: ({ children }) => (
-    <ul className={`list-disc pl-6 ${postText.body} mb-4 space-y-3`}>{children}</ul>
+    <ul className={`list-disc pl-6 ${postText.body} text-base 2xl:text-lg leading-[1.8] 2xl:leading-[1.85] mb-4 space-y-3`}>{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className={`list-decimal pl-6 ${postText.body} mb-4 space-y-3`}>{children}</ol>
+    <ol className={`list-decimal pl-6 ${postText.body} text-base 2xl:text-lg leading-[1.8] 2xl:leading-[1.85] mb-4 space-y-3`}>{children}</ol>
   ),
   li: ({ children }) => (
     <li className="[&>ul]:!mb-4 [&>ul]:mt-2 [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:!mb-4 [&>ol]:mt-2 [&>ol]:pl-6 [&>ol]:space-y-2 [&>p:last-child]:!mb-0">{children}</li>
