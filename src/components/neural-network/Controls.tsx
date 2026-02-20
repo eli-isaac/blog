@@ -50,10 +50,10 @@ export default function Controls() {
         <Settings />
       </div>
       
-      <div className="text-sm font-mono">
+      <div className="text-sm font-mono" title="Epoch counts how many times the network has seen the full dataset. Loss measures how wrong the predictions are — lower is better.">
         <span className="text-gray-500">Epoch:</span> {state.epoch}
         <span className="mx-3 text-gray-300">|</span>
-        <span className="text-gray-500">Loss:</span> {state.loss.toFixed(4)}
+        <span className="text-gray-500">Loss <span className="font-sans text-gray-400">(lower is better)</span>:</span> {state.loss.toFixed(4)}
       </div>
     </div>
   )

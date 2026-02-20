@@ -35,7 +35,7 @@ export default function Breadcrumbs() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="hidden md:block fixed bottom-10 left-[17.5rem] z-30"
+      className="hidden sidebar:block fixed bottom-10 left-[17.5rem] z-30"
       style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
     >
       <ol className="flex items-center gap-1.5 text-[0.8rem] text-gray-400 whitespace-nowrap">

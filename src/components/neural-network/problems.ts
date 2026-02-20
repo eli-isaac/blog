@@ -17,8 +17,8 @@ export const problems: Problem[] = [
   {
     id: 'xor',
     name: 'XOR Classification',
-    description: 'Non-linearly separable. Linear networks fail.',
-    explanation: 'Each dot is a data point with two coordinates. White dots belong to one class, dark dots to another. The background color shows the network\'s current prediction across the plane — reddish means it predicts class 0, bluish means class 1. The network must learn that opposite quadrants share a class, which is impossible with a single straight boundary.',
+    description: 'Can the network learn that opposite corners belong together?',
+    explanation: 'Each dot has two coordinates. White dots belong to one group, dark dots to another — and the groups sit in opposite corners. The background color shows what the network currently predicts: reddish means group 0, bluish means group 1. A straight line can never separate opposite corners, so a network without an activation function will fail here.',
     inputSize: 2,
     hiddenSize: 8,
     outputSize: 1,
@@ -37,8 +37,8 @@ export const problems: Problem[] = [
   {
     id: 'addition',
     name: 'Addition (0-4)',
-    description: 'Linear problem. Even linear networks can learn this.',
-    explanation: 'Each cell represents a pair of inputs (e.g. 2+3). The bold number is the network\'s predicted sum. Green cells are correct, red cells are incorrect. Addition is a linear operation — the contribution of each input is independent — so even a network with no activation function can learn it.',
+    description: 'A simple problem — no activation function needed.',
+    explanation: 'Each cell shows a pair of numbers to add (e.g. 2+3). The bold number is the network\'s predicted answer. Green means correct, red means wrong. Addition is straightforward — each input contributes independently to the sum — so even a network with no activation function can learn it.',
     inputSize: 2,
     hiddenSize: 8,
     outputSize: 9, // 0+0=0 to 4+4=8
@@ -57,8 +57,8 @@ export const problems: Problem[] = [
   {
     id: 'multiplication',
     name: 'Multiplication (0-4)',
-    description: 'Non-linear problem. Requires activation functions.',
-    explanation: 'Same layout as addition, but now the network must learn to multiply. The bold number is the predicted product; green means correct, red means incorrect. Multiplication is non-linear — the effect of one input depends on the value of the other — so a linear network will struggle here.',
+    description: 'Harder than addition — the network needs an activation function.',
+    explanation: 'Same layout as addition, but now the network must learn to multiply. The bold number is the predicted product; green means correct, red means wrong. Unlike addition, multiplication requires the inputs to interact — 3×2 is not just "3 plus something." This makes it fundamentally harder, and a network with no activation function will plateau with many red cells.',
     inputSize: 2,
     hiddenSize: 16,
     outputSize: 17, // 0*0=0 to 4*4=16
@@ -76,8 +76,8 @@ export const problems: Problem[] = [
   {
     id: 'circle',
     name: 'Circle Classification',
-    description: 'Points inside vs outside. Non-linear boundary.',
-    explanation: 'White dots are points inside a circle, dark dots are outside. The background color shows the network\'s prediction — bluish for "outside," reddish for "inside." The network needs to learn a circular boundary, which is inherently non-linear since no single straight cut can separate the two regions.',
+    description: 'Can the network learn to draw a circular boundary?',
+    explanation: 'White dots are inside a circle, dark dots are outside. The background shows the network\'s prediction — bluish for "outside," reddish for "inside." No single straight line can separate a circle from its surroundings, so a network without an activation function will fail here.',
     inputSize: 2,
     hiddenSize: 8,
     outputSize: 1,

@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 
+@theme {
+  --breakpoint-sidebar: 1100px;
+}
+
 * {
   box-sizing: border-box;
 }

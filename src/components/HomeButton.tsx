@@ -8,7 +8,7 @@ export default function HomeButton() {
       aria-label="Home"
     >
       <img src="/arrowsmith.png" alt="" className="w-6 h-6" />
-      <span className="hidden md:inline text-sm font-medium">Arrowsmith</span>
+      <span className="hidden sidebar:inline text-sm font-medium">Arrowsmith</span>
     </Link>
   )
 }

@@ -54,7 +54,7 @@ export default function ProblemSelector({ children }: ProblemSelectorProps) {
       
       {children}
 
-      <p className="text-xs text-gray-400 leading-relaxed mt-3 px-2">
+      <p className="text-sm text-gray-500 leading-relaxed mt-3 px-2">
         {currentProblem.explanation}
       </p>
     </div>

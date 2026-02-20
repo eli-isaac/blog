@@ -59,11 +59,11 @@ export default function Layout() {
   const activePortalId = getActivePortalId(location.pathname)
 
   return (
-    <div className="relative min-h-dvh md:flex" style={{ backgroundColor: '#efefe2' }}>
+    <div className="relative min-h-dvh sidebar:flex" style={{ backgroundColor: '#efefe2' }}>
       {/* Mobile toggle button */}
       <button 
         onClick={toggle}
-        className="fixed top-4 left-4 z-50 p-2 hover:bg-gray-100 rounded md:hidden"
+        className="fixed top-4 left-4 z-50 p-2 hover:bg-gray-100 rounded sidebar:hidden"
         aria-label="Toggle sidebar"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ export default function Layout() {
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 md:hidden" 
+          className="fixed inset-0 bg-black/50 z-30 sidebar:hidden" 
           onClick={close}
         />
       )}
@@ -82,11 +82,11 @@ export default function Layout() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed md:sticky top-0 left-0 h-dvh z-40
+          fixed sidebar:sticky top-0 left-0 h-dvh z-40
           ${sidebarConfig.bgClass} border-l border-r border-stone-300/60 w-64 p-6 overflow-hidden
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
+          sidebar:translate-x-0
         `}
         style={sidebarConfig.bgStyle}
       >
@@ -103,7 +103,7 @@ export default function Layout() {
         <Link
           to="/"
           onClick={close}
-          className="absolute bottom-6 left-6 right-6 md:hidden z-10"
+          className="absolute bottom-6 left-6 right-6 sidebar:hidden z-10"
         >
           <img src="/arrowsmith.png" alt="Arrowsmith" className="w-12 h-12 rounded-lg opacity-70 hover:opacity-100 transition-opacity" />
         </Link>
@@ -113,7 +113,7 @@ export default function Layout() {
       <Breadcrumbs />
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 pt-16 md:pt-6 px-6">
+      <main className="relative z-10 flex-1 pt-16 sidebar:pt-6 px-6">
         <Outlet />
       </main>
     </div>
